@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+profiler_trace.json
+*.egg-info/
+
+notebooks/
+.ipynb_checkpoints/
+*.bin

@@ -1,0 +1,22 @@
+# test_inference
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v --log-cli-level=INFO
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v -k "test_smoke" --log-cli-level=INFO
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v -k "test_correctness" --log-cli-level=INFO
+
+# test_kv_cache
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_kv_cache.py -v
+
+test_attention
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_attention.py -v
+
+# test_generator
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generator.py -v --log-cli-level=INFO
+
+# latency_benchmark
+PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/latency/latency_benchmark.py
+
+# throughput_benchmark
+PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/latency/throughput_benchmark.py
+
+# profiler_benchmark
+PYTHONPATH=. python -B -W ignore::DeprecationWarning benchmarks/profiler/profiler_benchmark.py

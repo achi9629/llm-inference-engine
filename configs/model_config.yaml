@@ -1,0 +1,7 @@
+model_family: "gpt2"
+model_variant: "124M"
+model_dir: "assets/models/gpt2/124M"
+
+max_seq_len: 1024
+device: "cuda:0"
+dtype: "float16"

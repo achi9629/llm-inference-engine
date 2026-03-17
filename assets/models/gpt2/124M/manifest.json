@@ -1,0 +1,14 @@
+{
+  "model_family": "gpt2",
+  "model_variant": "124M",
+  "architecture": "gpt2_decoder",
+  "weights_file": "gpt2-124M.bin",
+  "config_file": "config.json",
+  "tokenizer": {
+    "type": "gpt2_bpe",
+    "vocab_file": "vocab.json",
+    "merges_file": "merges.txt"
+  },
+  "framework": "pytorch",
+  "dtype": "float16"
+}
