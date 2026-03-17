@@ -75,18 +75,18 @@
 
 ### Sorted by `cuda_time_total` (top 10)
 
-| Op | CUDA Total | Self CUDA % | # Calls |
-|----|-----------|-------------|---------|
-| `aten::addmm` | 65.1 ms | 53.3% | 2400 |
-| `ampere_sgemm_64x32_sliced1x4_nn` | 37.9 ms | 31.0% | 1128 |
-| `aten::matmul` | 24.1 ms | 0.0% | 1250 |
-| `aten::bmm` | 12.8 ms | 10.5% | 1200 |
-| `cutlass::Kernel` | 11.9 ms | 9.8% | 624 |
-| `aten::mm` | 11.2 ms | 9.2% | 50 |
-| `ampere_sgemm_32x32_sliced1x4_nn` | 10.5 ms | 8.6% | 648 |
-| `aten::mul` | 6.6 ms | 5.4% | 3000 |
-| `aten::layer_norm` | 6.3 ms | 0.0% | 1250 |
-| `aten::add` | 5.4 ms | 4.5% | 2450 |
+| Op                                |CUDA Total| Self CUDA % | CUDA Time Avg |# Calls |
+|-----------------------------------|----------|-------------|---------------|--------|
+| `aten::addmm`                     | 64.84 ms | 53.2%       |    27.02 μs   | 2400   |
+| `ampere_sgemm_64x32_sliced1x4_nn` | 37.74 ms | 30.9%       |    33.45 μs   | 1128   |
+| `aten::matmul`                    | 24.12 ms | 0.0%        |    19.30 μs   | 1250   |
+| `aten::bmm`                       | 12.88 ms | 10.5%       |    10.74 μs   | 1200   |
+| `cutlass::Kernel`                 | 11.86 ms | 9.7%        |    19.01 μs   | 624    |
+| `aten::mm`                        | 11.86 ms | 9.2%        |    224.81 μs  | 50     |
+| `ampere_sgemm_32x32_sliced1x4_nn` | 10.48 ms | 8.6%        |    16.18 μs   | 648    |
+| `ampere_sgemm_128x128_nn`         | 8.05 ms  | 6.6%        |    17.67 μs   | 3000   |
+| `aten::mul`                       | 6.65 ms  | 5.4%        |    2.22 μs    | 1250   |
+| `aten::layer_norm`                | 6.35 ms  | 0.0%        |    5.08 μs    | 2450   |
 
 **Self CPU time total: 367 ms** | **Self CUDA time total: 122 ms**
 
@@ -95,7 +95,7 @@
 - **Matmuls dominate:** `aten::addmm` + `aten::bmm` + `aten::mm` = ~73% of CUDA time
 - **Actual CUDA kernels:** `ampere_sgemm_*` and `cutlass::Kernel` are the underlying GPU kernels for the matmuls
 - **Wrapper ops have 0% self time:** `aten::matmul` and `aten::layer_norm` dispatch to sub-ops — they show high total time but zero self time
-- **Elementwise ops:** `aten::mul` + `aten::add` = ~10% combined (GeLU activations, residual connections, attention scaling)
+- **Elementwise ops:** `aten::mul` = ~6% combined (GeLU activations, residual connections, attention scaling)
 
 ---
 

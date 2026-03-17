@@ -69,8 +69,8 @@
 
 - ✅ Implement `src/llm_engine/model/attention.py` (modified attention to reuse cached K/V)
 - ✅ Update cache during each decoding step
-- ⬜ Benchmark speed improvement vs no-cache baseline
-- ⬜ Record KV cache speedup numbers
+- ✅ Benchmark speed improvement vs no-cache baseline
+- ✅ Record KV cache speedup numbers
 
 ### Day 10 - Batch Inference Basics (Mar 18)
 
@@ -178,7 +178,7 @@
 | Checkpoint | Day | Metrics | Report |
 | ---------- | --- | ------- | ------ |
 | Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline_benchmark.md](baseline_benchmark.md) |
-| + KV Cache | 9 | same prompts, show speedup | link |
+| + KV Cache | 9 | same prompts, show speedup | [kv_cache_benchmark.md](kv_cache_benchmark.md) |
 | + Batch Inference | 11 | 2-8 prompts, throughput gain | link |
 | + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | link |
 | + Paged KV Cache | 16 | memory usage under concurrent requests | link |

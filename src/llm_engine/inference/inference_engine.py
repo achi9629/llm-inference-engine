@@ -77,8 +77,8 @@ class InferenceEngine:
                 raise ValueError("model_cfg is required when is_kv_cache_enabled=True")            
             self.kv_cache = KVCache(batch_size = batch_size,
                                     n_layers = model_cfg["n_layer"],
-                                    n_heads = model_cfg["n_head"],
-                                    head_dim = model_cfg["n_embd"] // model_cfg["n_head"],
+                                    n_heads = model_cfg["n_heads"],
+                                    head_dim = model_cfg["n_embd"] // model_cfg["n_heads"],
                                     max_seq_len = max_tokens_for_kv_cache,
                                     dtype = next(self.model.parameters()).dtype,
                                     device = self.device

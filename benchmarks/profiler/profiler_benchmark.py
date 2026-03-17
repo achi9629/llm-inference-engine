@@ -5,7 +5,7 @@ from llm_engine import load_model, load_asset_paths, Tokenizer, InferenceEngine,
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 
-def run_profiler_benchmark():
+def run_profiler_benchmark(is_kv_cache_enabled: bool = False):
     
     config, model_cfg = load_asset_paths()
     
@@ -16,11 +16,17 @@ def run_profiler_benchmark():
     max_tokens = 50
     sampling_method = 'greedy'
     
+    logger.info(f"KV Cache Enabled: {is_kv_cache_enabled}")
+    
     engine = InferenceEngine(model = model, 
                     device = device, 
                     tokenizer = tokenizer,
                     eos_token_id = model_cfg['eos_token_id'],
-                    sampling_method = sampling_method
+                    sampling_method = sampling_method,
+                    is_kv_cache_enabled = is_kv_cache_enabled,
+                    max_tokens_for_kv_cache = model_cfg['n_ctx'],
+                    batch_size = 1,
+                    model_cfg = model_cfg
         )
     
     # Warmup (not timed)
@@ -35,10 +41,11 @@ def run_profiler_benchmark():
         engine.generate("The capital of France is", max_tokens = max_tokens)
         
     logger.info(profiler.summary(top_n = 15, sort_by = 'cuda_time_total'))
-    logger.info(profiler.summary(top_n = 15, sort_by = 'self_cuda_time_total'))
+    # logger.info(profiler.summary(top_n = 15, sort_by = 'self_cuda_time_total'))
     
     # Export the trace to a JSON file for visualization in Chrome DevTools or other profiling tools
     # profiler.export_trace("profiler_trace.json")
     
 if __name__ == "__main__":
     run_profiler_benchmark()
+    run_profiler_benchmark(is_kv_cache_enabled = True)

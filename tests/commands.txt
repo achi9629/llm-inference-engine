@@ -16,7 +16,7 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generat
 PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/latency/latency_benchmark.py
 
 # throughput_benchmark
-PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/latency/throughput_benchmark.py
+PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/throughput/throughput_benchmark.py
 
 # profiler_benchmark
 PYTHONPATH=. python -B -W ignore::DeprecationWarning benchmarks/profiler/profiler_benchmark.py

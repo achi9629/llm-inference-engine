@@ -1,10 +1,6 @@
-import torch, pytest, logging # type: ignore
+import torch, pytest # type: ignore
 
 from llm_engine import load_asset_paths, load_model, generator, KVCache
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
-
 
 batch_size = 1
 config, model_cfg = load_asset_paths()

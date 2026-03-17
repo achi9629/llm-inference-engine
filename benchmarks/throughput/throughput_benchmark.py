@@ -6,7 +6,7 @@ from benchmarks.metrics import BenchmarkMetrics
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 
-def run_throughput_benchmark():
+def run_throughput_benchmark(is_kv_cache_enabled: bool = False):
     
     config, model_cfg = load_asset_paths()
     
@@ -17,11 +17,17 @@ def run_throughput_benchmark():
     max_tokens = 50
     sampling_method = 'greedy'
     
+    logger.info(f"KV Cache Enabled: {is_kv_cache_enabled}")
+    
     engine = InferenceEngine(model = model, 
                     device = device, 
                     tokenizer = tokenizer,
                     eos_token_id = model_cfg['eos_token_id'],
-                    sampling_method = sampling_method
+                    sampling_method = sampling_method,
+                    is_kv_cache_enabled = is_kv_cache_enabled,
+                    max_tokens_for_kv_cache = model_cfg['n_ctx'],
+                    batch_size = 1,
+                    model_cfg = model_cfg
         )
     
     metrics = BenchmarkMetrics(device_id = int(device[-1]), 
@@ -67,3 +73,4 @@ def run_throughput_benchmark():
         
 if __name__ == "__main__":
     run_throughput_benchmark()
+    run_throughput_benchmark(is_kv_cache_enabled = True)

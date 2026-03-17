@@ -1,4 +1,5 @@
 __pycache__/
+.vscode/
 *.pyc
 .pytest_cache/
 profiler_trace.json
@@ -7,3 +8,7 @@ profiler_trace.json
 notebooks/
 .ipynb_checkpoints/
 *.bin
+
+# Markdown files
+career_strategy.md
+git_commands.md
