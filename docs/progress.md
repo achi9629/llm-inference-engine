@@ -74,9 +74,9 @@
 
 ### Day 10 - Batch Inference Basics (Mar 18)
 
-- ⬜ Extend `src/llm_engine/inference/generator.py` for batched inputs
-- ⬜ Implement `src/llm_engine/utils/tensor_utils.py` (padding, batching helpers)
-- ⬜ Handle different prompt lengths within a batch (padding/attention masks)
+- ✅ Extend `src/llm_engine/inference/generator.py` for batched inputs
+- ✅ Implement `src/llm_engine/utils/tensor_utils.py` (padding, batching helpers)
+- ✅ Handle different prompt lengths within a batch (padding/attention masks)
 
 ### Day 11 - Batch Inference Evaluation (Mar 19)
 

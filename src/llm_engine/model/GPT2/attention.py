@@ -42,7 +42,8 @@ class MultiHeadAttention(nn.Module):
     def forward(self, 
                 x: torch.Tensor,
                 layer_idx: int = None,
-                kv_cache: object = None
+                kv_cache: object = None,
+                padding_mask: torch.Tensor = None
         ) -> torch.Tensor:
         
         '''
@@ -50,11 +51,13 @@ class MultiHeadAttention(nn.Module):
             Forward pass for the Multi-Head Attention module. 
             This method computes the attention output for a given input tensor, 
             optionally using cached key and value tensors from previous time steps (useful during autoregressive decoding).
+            options for handling padding masks can also be included to prevent attention to padded tokens.
             
         Arguments:
             x: input tensor of shape (batch_size, sequence_length, embedding_dim)
             layer_idx: an optional index of the current layer (used for caching key and value tensors)
-            kv_cache: an optional object for caching key and value tensors across time steps (used during
+            kv_cache: an optional object for caching key and value tensors across time steps (used during autoregressive decoding)
+            padding_mask: an optional tensor of shape (batch_size, sequence_length) where 1
             
         Returns:
             output tensor of shape (batch_size, sequence_length, embedding_dim)
@@ -84,7 +87,23 @@ class MultiHeadAttention(nn.Module):
             raise ValueError(f"Causal mask size {self.bias.size()} is smaller than required for sequence length {T_new} and total length {T_total}")
         
         causal_mask = self.bias[:, :, T_total - T_new: T_total, : T_total].to(device)
-        score = score.masked_fill(causal_mask == 0, float("-inf"))
+        # torch.finfo(score.dtype).min gives the minimum representable value for the data type of score, 
+        # which is used to effectively mask out positions in the attention scores that should not be attended 
+        # to (e.g., future tokens in causal attention).
+        score = score.masked_fill(causal_mask == 0, torch.finfo(score.dtype).min)
+        
+        if padding_mask is not None:
+            # Expand the padding mask to match the dimensions of the attention scores
+            if kv_cache is not None and layer_idx is not None:
+                # If using kv_cache, we need to account for the total sequence length (including cached tokens)
+                padding_mask = padding_mask[:, :T_total]  # Ensure padding mask matches the total sequence length
+            
+            padding_mask = padding_mask.unsqueeze(1).unsqueeze(2)  # (B, 1, 1, T_total)
+            
+            # torch.finfo(score.dtype).min gives the minimum representable value for the data type of score, 
+            # which is used to effectively mask out positions in the attention scores that should not be attended 
+            # to (e.g., future tokens in causal attention).
+            score = score.masked_fill(padding_mask == 0, torch.finfo(score.dtype).min)
         
         attn_weights = torch.softmax(score, dim=-1)                   # (B, n_head, T_new, T_total)
         attn_weights = self.attn_drop(attn_weights)

@@ -33,6 +33,10 @@ class Tokenizer:
         vocab = module_dir / "vocab.json"
         merges = module_dir / "merges.txt"
         self.tokenizer = GPT2TokenizerFast(vocab_file=vocab, merges_file=merges, clean_up_tokenization_spaces=True)
+        # Set padding side to left for GPT2, which is a causal language model. 
+        # This ensures that padding tokens are added to the left of the input sequence, 
+        # allowing the model to attend to the most recent tokens on the right.
+        self.tokenizer.padding_side = "left"
         
         # GPT2 tokenizer does not have a padding token by default, so we set it to the end-of-sequence token
         if self.tokenizer.pad_token is None:
@@ -119,15 +123,16 @@ class Tokenizer:
         Returns:
             torch.Tensor | list[int]: A list of integer token IDs representing the encoded text, 
                                     or a PyTorch tensor if return_tensor is True.
+
         """
         
         encoded = self.tokenizer(text, 
-                              truncation=truncation,
-                              max_length=max_length,
-                              return_tensors='pt' if return_tensor else None
-                              )["input_ids"]
+                                 truncation=truncation,
+                                 max_length=max_length,
+                                 return_tensors='pt' if return_tensor else None
+                    )["input_ids"]
         
-        return encoded
+        return encoded, None 
     
     def batch_encode( self, 
                       texts: list[str], 
@@ -147,15 +152,18 @@ class Tokenizer:
             max_length (int | None): The maximum length of the encoded token lists
         Returns:
             torch.Tensor | list[list[int]]: A list of lists of integer token IDs 
-            representing the encoded texts, or a PyTorch tensor if return_tensor is True.
+                representing the encoded texts, or a PyTorch tensor if return_tensor is True.
+            torch.Tensor: The attention mask indicating which tokens are padding (0) and 
+                which are not (1), if return_tensor is True. Otherwise, None.
         """
-        encoded = self.tokenizer(texts, 
+        result = self.tokenizer(texts, 
                                 padding=padding,
                                 max_length=max_length,
                                 truncation=truncation,
                                 return_tensors='pt' if return_tensor else None,
-                                )['input_ids']
-        return encoded
+                                )
+
+        return result["input_ids"], result["attention_mask"] if return_tensor else None
         
     def single_sentence_decode( self, 
                        tokens: list[int],

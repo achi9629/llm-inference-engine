@@ -12,11 +12,8 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_attenti
 # test_generator
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generator.py -v --log-cli-level=INFO
 
-# latency_benchmark
-PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/latency/latency_benchmark.py
+# test_inference
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v --log-cli-level=INFO
 
-# throughput_benchmark
-PYTHONPATH=. python -W ignore::DeprecationWarning benchmarks/throughput/throughput_benchmark.py
-
-# profiler_benchmark
-PYTHONPATH=. python -B -W ignore::DeprecationWarning benchmarks/profiler/profiler_benchmark.py
+# test_padding_mask
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_padding_mask.py -v --log-cli-level=INFO

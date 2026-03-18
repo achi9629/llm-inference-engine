@@ -148,14 +148,14 @@ class InferenceEngine:
         elif isinstance(input_text, list) and not all(isinstance(item, str) for item in input_text):
             raise ValueError("All items in the input prompt list must be strings.")
         
-        token_ids = self.encode(input_text)
-        
+        token_ids, padding_mask = self.encode(input_text)
         predicted_token_ids, token_count, stop_reason = generator(
                                                                     model = self.model,
                                                                     token_ids = token_ids,
                                                                     device = self.device,
                                                                     max_tokens = max_tokens,
                                                                     eos_token_id = self.eos_token_id,
+                                                                    padding_mask = padding_mask, 
                                                                     sampling_method = self.sampling_method,
                                                                     kv_cache = self.kv_cache
                                                                 )
@@ -173,8 +173,8 @@ class InferenceEngine:
                 "input_text": input_text,
                 "generated_text": decoded_text,
                 "sampling_method": self.sampling_method,
-                "token_count": token_count,
-                "stop_reason": stop_reason
+                "token_count": token_count.item() if isinstance(token_count, torch.Tensor) else token_count, # Convert single-token count tensor to int.
+                "stop_reason": stop_reason[0]
             }
         elif isinstance(input_text, list) and isinstance(decoded_text, list) and len(input_text) == len(decoded_text):
             return [
@@ -182,8 +182,8 @@ class InferenceEngine:
                         "input_text": input_text[i],
                         "generated_text": decoded_text[i],
                         "sampling_method": self.sampling_method, # This is currently the same for all inputs in the batch, as the generator function is not yet implemented to handle batch generation.
-                        "token_count": token_count, # This is currently the same for all inputs in the batch, as the generator function is not yet implemented to handle batch generation.
-                        "stop_reason": stop_reason # This is currently the same for all inputs in the batch, as the generator function is not yet implemented to handle batch generation.
+                        "token_count": token_count[i].item(), # Convert each token count tensor to int for the response.
+                        "stop_reason": stop_reason[i] # Assuming stop_reason is a list of reasons corresponding to each input in the batch.
                     }
                     for i in range(len(input_text))
                 ]

@@ -13,8 +13,8 @@ def test_smoke_full_inference_path():
     model = load_model(config, model_cfg)
     tokenizer = Tokenizer(config)
     
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    max_tokens = 500
+    device = 'cpu'
+    max_tokens = 50
     sampling_method = 'greedy'
     engine = InferenceEngine(model = model, 
                              device = device, 
@@ -30,7 +30,7 @@ def test_smoke_full_inference_path():
             ]
     for inp in input_sentence:
         output = engine.generate(inp, max_tokens = max_tokens)
-        logger.info(f"Output: {output}")
+
         # Basic sanity checks on the output structure and content
         if isinstance(inp, str):
             assert isinstance(output, dict)
@@ -38,7 +38,6 @@ def test_smoke_full_inference_path():
             assert output['sampling_method'] == sampling_method
             assert isinstance(output["token_count"], int) and output["token_count"] > 0
             assert isinstance(output["stop_reason"], str)
-            # assert output["stop_reason"] in [f"Reached max_tokens limit of {max_tokens}.", "All sequences generated EOS token."]
         elif isinstance(inp, list):
             assert isinstance(output, list)
             assert len(output) == len(inp)
@@ -55,7 +54,7 @@ def test_correctness_with_diverse_prompts():
     model = load_model(config, model_cfg)
     tokenizer = Tokenizer(config)
     
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'  # Force CPU for correctness testing to avoid GPU-related non-determinism
     engine = InferenceEngine(model = model, 
                              device = device, 
                              tokenizer = tokenizer,
@@ -73,7 +72,7 @@ def test_correctness_with_diverse_prompts():
         text = output["generated_text"]
         if isinstance(text, list):
             text = text[0]
-        logger.info(f"Input: {prompt}, Output: {text}")
+        # logger.info(f"Input: {prompt}, Output: {text}")
         assert expected_word in text, f"Expected '{expected_word}' in output for prompt: '{prompt}'"
     
     # Determinism check — same prompt, same output

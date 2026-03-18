@@ -45,7 +45,6 @@ def run_latency_benchmark(is_kv_cache_enabled: bool = False):
         
         token_ids = torch.randint(0, model_cfg['vocab_size'], (length,))
         prompt = tokenizer.decode(token_ids)
-        
         metrics.start()
         output = engine.generate(input_text = prompt, max_tokens = max_tokens)
         metrics.stop(num_tokens = output['token_count'])
@@ -74,5 +73,5 @@ def run_latency_benchmark(is_kv_cache_enabled: bool = False):
         logger.info(row)
         
 if __name__ == "__main__":
-    run_latency_benchmark()
+    # run_latency_benchmark()
     run_latency_benchmark(is_kv_cache_enabled = True)

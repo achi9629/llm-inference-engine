@@ -2,11 +2,17 @@ import torch # type: ignore
 
 from .sampler import greedy_sampler
 
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 def generator(model: object, 
-              token_ids: torch.Tensor, 
+              token_ids: torch.Tensor,
               device: str,
               max_tokens: int = 50, 
               eos_token_id: int = 50256,
+              padding_mask: torch.Tensor = None,
               sampling_method: str = 'greedy',
               kv_cache: object = None,
     ) -> tuple[torch.Tensor, int, str]:
@@ -67,19 +73,25 @@ def generator(model: object,
     if sampling_method not in ('greedy',):
         raise ValueError(f"Unsupported sampling method: {sampling_method}")
     
-    token_count = 0
     
     with torch.inference_mode():
+        model.eval()
         token_ids = token_ids.to(device)
         
         was_1d = token_ids.ndim == 1
         if was_1d:
             token_ids = token_ids.unsqueeze(0)
+            token_count = 0
+        else:
+            eos_bool = torch.zeros(token_ids.size(0), dtype=torch.bool, device=device) # Track which sequences have generated EOS.
+            token_count = torch.zeros(token_ids.size(0), dtype=torch.long, device=device) # Track token counts for each sequence.
+            stop_reason = [""]*token_ids.size(0) # Track stop reasons for each sequence.
+
             
         input_ids = token_ids # Keep original input for final output concatenation.
         while True:
             
-            logits = model(input_ids, kv_cache = kv_cache)
+            logits = model(input_ids, kv_cache = kv_cache, padding_mask = padding_mask)
             
             if logits.ndim != 3:
                 raise ValueError("Model output logits must be a 3D tensor of shape (batch_size, sequence_length, vocab_size)")
@@ -99,7 +111,9 @@ def generator(model: object,
                 output_token_id = greedy_sampler(logits)
 
             token_ids = torch.cat([token_ids, output_token_id.unsqueeze(-1)], dim=-1)
-
+            if padding_mask is not None:
+                padding_mask = torch.cat([padding_mask, torch.ones(output_token_id.shape[0], 1, dtype = padding_mask.dtype, device = padding_mask.device)], dim=-1)
+            
             if kv_cache is not None:
                 # During decoding with KV cache, we only feed the new token.
                 input_ids = output_token_id.unsqueeze(-1) # Shape: (batch_size, 1)
@@ -107,19 +121,39 @@ def generator(model: object,
                 # During non-cached generation, we feed the entire sequence each step.
                 input_ids = token_ids
             
-
             # TODO: Replace all-EOS batch stop with per-sequence finished-mask handling.
             # * This allows each sequence to stop independently during batched decoding.
-            if (output_token_id == eos_token_id).all():
-                stop_reason = "All sequences generated EOS token."
-                break
+            # if (output_token_id == eos_token_id).all():
+            #     stop_reason = "All sequences generated EOS token."
+            #     break
             
-            token_count += 1 # 
-            
-            if token_count >= max_tokens:
-                stop_reason = f"Reached max_tokens limit of {max_tokens}."
-                break
-    
+            if was_1d:
+                
+                if output_token_id.item() == eos_token_id:
+                    stop_reason = "Sequences generated EOS token."
+                    break
+                
+                token_count += 1
+                
+                if token_count >= max_tokens:
+                    stop_reason = f"Reached max_tokens limit of {max_tokens}."
+                    break
+                
+            else:
+                eos_bool |= (output_token_id == eos_token_id).squeeze(-1)
+                index = eos_bool == True
+                token_count[~eos_bool] += 1
+                
+                for i in range(len(stop_reason)):
+                    if stop_reason[i] == "":
+                        if index[i]:
+                            stop_reason[i] = "Sequences generated EOS token."
+                        elif token_count[i] >= max_tokens :
+                            stop_reason[i] = f"Reached max_tokens limit of {max_tokens}."
+                
+                if (eos_bool | (token_count >= max_tokens)).all():
+                    break  
+                
     if was_1d:
         token_ids = token_ids.squeeze(0)
     

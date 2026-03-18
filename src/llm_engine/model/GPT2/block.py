@@ -45,7 +45,8 @@ class TransformerBlock(nn.Module):
     def forward(self, 
                 x: torch.Tensor,
                 layer_idx: int = None,
-                kv_cache: object = None
+                kv_cache: object = None,
+                padding_mask: torch.Tensor = None
         ) -> torch.Tensor:
         
         '''
@@ -58,7 +59,7 @@ class TransformerBlock(nn.Module):
         '''
         
         # MHA sub-layer with residual connection and layer normalization
-        mha = self.attn(self.ln_1(x), layer_idx = layer_idx, kv_cache = kv_cache)
+        mha = self.attn(self.ln_1(x), layer_idx = layer_idx, kv_cache = kv_cache, padding_mask = padding_mask)
         x = x + self.resid_drop(mha)
         
         # FFN sub-layer with residual connection and layer normalization

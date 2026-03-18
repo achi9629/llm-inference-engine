@@ -68,11 +68,25 @@ src/llm_engine/
 
 ### Setup
 
+#### 1) Create and activate virtual environment
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
 ```
+
+#### 2) Install dependencies
+
+````bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+````
+
+#### 3) Verify installation
+
+````bash
+python -c "import torch, transformers, fastapi; print('OK', torch.__version__, transformers.__version__)"
+````
 
 ### Run Benchmarks
 
@@ -93,6 +107,12 @@ PYTHONPATH=. python -B benchmarks/profiler/profiler_benchmark.py
 PYTHONPATH=src python -m pytest tests/ -v
 ```
 
+### Run Example
+
+```bash
+PYTHONPATH=. python examples/simple_generation.py
+```
+
 ## Technical Details
 
 - **KV Cache**: Pre-allocated zero tensors per layer, shape `(B, n_heads, max_seq_len, head_dim)`. During decode, only the new token's K/V are appended. Attention computes `Q_new @ K_cached^T` instead of reprocessing the full sequence.
@@ -101,9 +121,9 @@ PYTHONPATH=src python -m pytest tests/ -v
 
 ## Hardware
 
-| | |
-|---|---|
-| GPU | NVIDIA A100-SXM4-80GB |
-| Peak TFLOPS (fp32) | 19.5 |
-| PyTorch | 2.4.0+cu121 |
-| Python | 3.10.18 |
+|                    |                       |
+|--------------------|-----------------------|
+| GPU                | NVIDIA A100-SXM4-80GB |
+| Peak TFLOPS (fp32) | 19.5                  |
+| PyTorch            | 2.4.0+cu121           |
+| Python             | 3.10.18               |

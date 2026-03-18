@@ -66,7 +66,9 @@ class GPT2(nn.Module):
         
     def forward(self, 
                 input_ids: torch.Tensor,
-                kv_cache: object = None) -> torch.Tensor:
+                kv_cache: object = None,
+                padding_mask: torch.Tensor = None,
+            ) -> torch.Tensor:
         
         '''
         Description:
@@ -105,17 +107,33 @@ class GPT2(nn.Module):
         # token embeddings: (B, T) -> (B, T, n_embd)
         tok_emb = self.wte(input_ids)
         
-        # position embeddings with offset: arange(start_pos, start_pos + T) -> (1, T) -> (B, T, n_embd)
-        pos_ids = torch.arange(start_pos, start_pos + T, device = input_ids.device, dtype = torch.long).unsqueeze(0)
+        # # This approach does not work with havving left padding tokens, 
+        # # since the position ids will be shifted by the number of padding tokens, 
+        # # which is not correct.
+        # # position embeddings with offset: arange(start_pos, start_pos + T) -> (1, T) -> (B, T, n_embd)
+        # pos_ids = torch.arange(start_pos, start_pos + T, device = input_ids.device, dtype = torch.long).unsqueeze(0)
+        # pos_emb = self.wpe(pos_ids)
+        
+        if padding_mask is not None:
+            # cumsum of the mask gives position 1,2,3... for real tokens, stays flat for pads
+            # subtract 1 so real tokens start at position 0
+            # add start_pos offset for KV cache decode steps
+            pos_ids = (padding_mask.long().cumsum(dim=-1) - 1).clamp(min=0)
+            if kv_cache is not None and T == 1:
+                # During decode: padding_mask is the full mask including generated tokens
+                # The new token's position = number of real tokens before it
+                pos_ids = pos_ids[:, -1:] # just the last column, shape (B, 1)
+        else:
+            pos_ids = torch.arange(start_pos, start_pos + T, device=input_ids.device).unsqueeze(0)
         pos_emb = self.wpe(pos_ids)
         
         # combine token and position embeddings, then apply dropout: (B, T, n_embd)
-        x = tok_emb + pos_emb 
+        x = tok_emb + pos_emb
         x = self.embd_drop(x)
         
         # pass through transformer blocks
         for idx, block in enumerate(self.h):
-            x = block(x, idx, kv_cache) if kv_cache is not None else block(x)
+            x = block(x, idx, kv_cache, padding_mask = padding_mask) if kv_cache is not None else block(x, padding_mask = padding_mask)
             
         # final layer normalization
         x = self.ln_f(x)

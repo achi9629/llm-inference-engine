@@ -23,7 +23,7 @@ def kv_cache():
                    n_heads = model_cfg['n_heads'],
                    head_dim = model_cfg['n_embd'] // model_cfg['n_heads'],
                    max_seq_len = model_cfg['n_ctx'],
-                   dtype = torch.float32,
+                   dtype = next(model.parameters()).dtype,
                    device = 'cpu'
             )
 
@@ -129,5 +129,5 @@ def test_max_tokens_stop_reason():
                                                               sampling_method = 'greedy',
                                                         )
     
-    assert stop_reason == f"Reached max_tokens limit of {3}.", f"Expected stop reason to indicate max_tokens limit, but got '{stop_reason}'"
+    assert stop_reason[0] == f"Reached max_tokens limit of {3}.", f"Expected stop reason to indicate max_tokens limit, but got '{stop_reason}'"
     assert token_count == 3, f"Expected token count to be exactly 3 when stopping due to max_tokens, but got {token_count}"
