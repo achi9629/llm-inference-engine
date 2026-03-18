@@ -9,10 +9,10 @@ A lightweight LLM inference engine built from scratch in PyTorch, inspired by [v
 - **KV Cache** — pre-allocated per-layer cache for O(n) decode instead of O(n²)
 - Benchmark suite (latency, throughput, GPU profiler)
 - Pretrained weight loading from OpenAI GPT-2 checkpoints
+- **Batch Inference** — static batching with left padding, attention masks, per-sequence EOS tracking (up to 118x throughput gain)
 
 ## Features (Planned)
 
-- Batch inference with padding + attention masks
 - Continuous batching scheduler
 - Paged KV cache (block-level memory management)
 - Request queue + priority scheduling
@@ -49,7 +49,18 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 | Self CUDA time | 121.90 ms               | 65.14 ms               | **-46.6%**              |
 | Dominant kernel| `sgemm` (matrix-matrix) | `gemv` (matrix-vector) | Kernel dispatch changed |
 
-> Full benchmark details: [baseline_benchmark.md](docs/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/kv_cache_benchmark.md)
+### Batch Inference Throughput (KV Cache enabled)
+
+![Batch Throughput](assets/plots/batch_throughput.png)
+
+| Batch Size | Tok/s        | Speedup vs bs=1 | Peak Memory |
+|------------|--------------|-----------------|-------------|
+| 1          | 155 tok/s    | 1x              | 643 MB      |
+| 8          | 1,138 tok/s  | 7.3x            | 1,399 MB    |
+| 128        | 11,368 tok/s | 73.3x           | 14,359 MB   |
+| 512        | 18,346 tok/s | **118.3x**      | 55,831 MB   |
+
+> Full benchmark details: [baseline_benchmark.md](docs/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/batched_kv_cache_benchmark.md)
 
 ## Project Structure
 
