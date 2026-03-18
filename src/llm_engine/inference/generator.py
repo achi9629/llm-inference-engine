@@ -77,6 +77,8 @@ def generator(model: object,
     with torch.inference_mode():
         model.eval()
         token_ids = token_ids.to(device)
+        if padding_mask is not None:
+            padding_mask = padding_mask.to(device)
         
         was_1d = token_ids.ndim == 1
         if was_1d:

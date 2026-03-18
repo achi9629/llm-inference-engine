@@ -57,7 +57,8 @@ class MultiHeadAttention(nn.Module):
             x: input tensor of shape (batch_size, sequence_length, embedding_dim)
             layer_idx: an optional index of the current layer (used for caching key and value tensors)
             kv_cache: an optional object for caching key and value tensors across time steps (used during autoregressive decoding)
-            padding_mask: an optional tensor of shape (batch_size, sequence_length) where 1
+            padding_mask: an optional tensor of shape (batch_size, sequence_length) where 0 indicates positions 
+                that should be masked (not attended to) and 1 indicates valid positions
             
         Returns:
             output tensor of shape (batch_size, sequence_length, embedding_dim)

@@ -54,6 +54,9 @@ class TransformerBlock(nn.Module):
             x: Input tensor of shape (batch_size, sequence_length, n_embd)
             layer_idx: The index of the current transformer block layer (used for caching in attention).
             kv_cache: An optional cache object for storing key and value tensors in attention to speed up decoding.
+            padding_mask: an optional tensor of shape (batch_size, sequence_length) where 0 indicates positions 
+                that should be masked (not attended to) and 1 indicates valid positions
+        
         Returns:
             Output tensor of shape (batch_size, sequence_length, n_embd)
         '''

@@ -6,7 +6,7 @@ from benchmarks.metrics import BenchmarkMetrics
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 
-def run_latency_benchmark(is_kv_cache_enabled: bool = False):
+def run_latency_benchmark(is_kv_cache_enabled: bool = False) -> None:
     
     config, model_cfg = load_asset_paths()
     
@@ -73,5 +73,5 @@ def run_latency_benchmark(is_kv_cache_enabled: bool = False):
         logger.info(row)
         
 if __name__ == "__main__":
-    # run_latency_benchmark()
+    run_latency_benchmark()
     run_latency_benchmark(is_kv_cache_enabled = True)

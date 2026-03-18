@@ -85,6 +85,8 @@ class GPT2(nn.Module):
                 During decode with kv_cache, T is 1 (single new token).
             kv_cache (object, optional): KVCache instance for reusing past K/V
                 tensors across decoding steps. None disables caching.
+            padding_mask: (torch.Tensor, optional): an optional tensor of shape (batch_size, sequence_length) where 0 indicates positions 
+                that should be masked (not attended to) and 1 indicates valid positions
             
         Returns:
             torch.Tensor: Logits of shape (B, T, vocab_size).

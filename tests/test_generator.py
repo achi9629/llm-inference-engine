@@ -24,7 +24,7 @@ def kv_cache():
                    head_dim = model_cfg['n_embd'] // model_cfg['n_heads'],
                    max_seq_len = model_cfg['n_ctx'],
                    dtype = next(model.parameters()).dtype,
-                   device = 'cpu'
+                   device = 'cpu',
             )
 
 def test_output_shape_and_length_without_kv_cache():

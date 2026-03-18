@@ -32,7 +32,7 @@ def kv_cache():
                    head_dim = head_dim,
                    max_seq_len = n_ctx,
                    dtype = torch.float32,
-                   device = 'cpu'
+                   device = 'cpu',
             )
     
 def test_no_cache_output_shape(attention):

@@ -80,9 +80,9 @@
 
 ### Day 11 - Batch Inference Evaluation (Mar 19)
 
-- ⬜ Run batch inference with 2-8 prompts simultaneously
-- ⬜ Measure throughput improvements vs single-request
-- ⬜ Record batch inference throughput numbers
+- ✅ Run batch inference with 2-8 prompts simultaneously
+- ✅ Measure throughput improvements vs single-request
+- ✅ Record batch inference throughput numbers
 
 ### Day 12 - Request Queue + Scheduler (Mar 20)
 
@@ -177,9 +177,9 @@
 
 | Checkpoint | Day | Metrics | Report |
 | ---------- | --- | ------- | ------ |
-| Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline_benchmark.md](baseline_benchmark.md) |
-| + KV Cache | 9 | same prompts, show speedup | [kv_cache_benchmark.md](kv_cache_benchmark.md) |
-| + Batch Inference | 11 | 2-8 prompts, throughput gain | link |
+| Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline.md](baseline_benchmark.md) |
+| + KV Cache | 9 | same prompts, show speedup | [kv_cache.md](kv_cache_benchmark.md) |
+| + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](batched_kv_cache_benchmark.md) |
 | + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | link |
 | + Paged KV Cache | 16 | memory usage under concurrent requests | link |
 | Full Load Test | 18 | 8-32 users, p95 latency, tokens/sec, GPU memory | link |

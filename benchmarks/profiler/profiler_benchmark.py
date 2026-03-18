@@ -5,7 +5,7 @@ from llm_engine import load_model, load_asset_paths, Tokenizer, InferenceEngine,
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s")
 
-def run_profiler_benchmark(is_kv_cache_enabled: bool = False):
+def run_profiler_benchmark(is_kv_cache_enabled: bool = False) -> None:
     
     config, model_cfg = load_asset_paths()
     
