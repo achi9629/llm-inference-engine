@@ -86,10 +86,10 @@
 
 ### Day 12 - Request Queue + Scheduler (Mar 20)
 
-- ⬜ Implement `src/llm_engine/scheduler/request.py` (request dataclass: prompt, token_ids, state, timestamps)
-- ⬜ Implement `src/llm_engine/scheduler/request_queue.py` (priority queue for pending requests)
-- ⬜ Implement `src/llm_engine/scheduler/batch_scheduler.py` (group requests into batches respecting memory budget)
-- ⬜ Simulate asynchronous requests arriving over time
+- ✅ Implement `src/llm_engine/scheduler/request.py` (request dataclass: prompt, token_ids, state, timestamps)
+- ✅ Implement `src/llm_engine/scheduler/request_queue.py` (priority queue for pending requests)
+- ✅ Implement `src/llm_engine/scheduler/batch_scheduler.py` (group requests into batches respecting memory budget)
+- ✅ Simulate asynchronous requests arriving over time
 
 ### Day 13 - Continuous Batching + Unit Tests (Mar 21)
 

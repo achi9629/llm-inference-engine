@@ -7,8 +7,8 @@ from .utils.gpu_monitor import GPUMonitor
 from .utils.profiler import InferenceProfiler
 from .cache.kv_cache import KVCache
 from .model.GPT2.attention import MultiHeadAttention
-from .inference.generator import generator
-
+from .scheduler.request import Request
+from .scheduler.batch_scheduler import BatchScheduler
 __all__ = [
             "Tokenizer",
             "InferenceEngine",
@@ -19,4 +19,7 @@ __all__ = [
             "InferenceProfiler",
             "KVCache",
             "MultiHeadAttention",
+            "Request",
+            "BatchScheduler",
+            
 ]   
