@@ -114,8 +114,8 @@
 
 ### Day 15 - Paged KV Cache: Memory Allocator (Mar 23)
 
-- ⬜ Implement `src/llm_engine/cache/memory_allocator.py` (block-level GPU memory allocator, free list, fixed-size blocks)
-- ⬜ Unit test allocator: allocate, free, reuse blocks
+- ✅ Implement `src/llm_engine/cache/memory_allocator.py` (block-level GPU memory allocator, free list, fixed-size blocks)
+- ✅ Unit test allocator: allocate, free, reuse blocks
 
 ### Day 16 - Paged KV Cache: Block Table + Integration (Mar 24)
 
@@ -179,10 +179,10 @@
 
 | Checkpoint | Day | Metrics | Report |
 | ---------- | --- | ------- | ------ |
-| Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline.md](baseline_benchmark.md) |
-| + KV Cache | 9 | same prompts, show speedup | [kv_cache.md](kv_cache_benchmark.md) |
-| + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](batched_kv_cache_benchmark.md) |
-| + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | [continuous_batching.md](continuous_batching_benchmark.md) |
+| Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline.md](benchmark/baseline_benchmark.md) |
+| + KV Cache | 9 | same prompts, show speedup | [kv_cache.md](benchmark/kv_cache_benchmark.md) |
+| + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](benchmark/batched_kv_cache_benchmark.md) |
+| + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | [continuous_batching.md](benchmark/continuous_batching_benchmark.md) |
 | + Paged KV Cache | 16 | memory usage under concurrent requests | link |
 | Full Load Test | 18 | 8-32 users, p95 latency, tokens/sec, GPU memory | link |
 

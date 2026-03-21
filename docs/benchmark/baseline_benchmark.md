@@ -30,6 +30,7 @@
 | 512 | 0.625 | 80.0 | 765 | 98 | 13 | 0.10 |
 
 **Observations:**
+
 - Latency scales with prompt length due to increasing prefill cost (attention is O(n²))
 - Throughput drops at 512 tokens — without KV cache, each decode step recomputes attention over the full sequence
 - Memory grows linearly with prompt length (~0.4 MB per additional token in activations)
@@ -59,6 +60,7 @@
 | 1000 | 1000 | 12.881 | 77.6 | 930 | 99 | 23 | 0.10 |
 
 **Observations:**
+
 - Throughput is roughly flat (~130–170 tok/s) — confirms the model is memory-bandwidth bound
 - Peak throughput at 200 tokens (169.2 tok/s) — sweet spot between overhead amortization and quadratic attention cost
 - Tok/s degrades beyond 300 tokens — without KV cache, per-step cost grows O(n²) with sequence length
@@ -102,6 +104,7 @@
 ## 4. Key Takeaways
 
 ### GPU Utilization ≠ Efficiency
+
 - **GPU Utilization: 98%** — the GPU is busy nearly all the time
 - **MFU: 0.17%** — but it's only achieving 0.17% of theoretical peak FLOPS
 - The GPU is busy **waiting on memory transfers**, not doing useful compute
@@ -109,7 +112,7 @@
 
 ### What MFU Tells Us
 
-```
+```bash
 MFU = (2 × N_params × tokens/sec) / peak_TFLOPS × 100
 
 At 130 tok/s:
@@ -117,6 +120,7 @@ MFU = (2 × 124 × 10⁶ × 130) / (19.5 × 10¹²) × 100 = 0.17%
 ```
 
 ### Bottlenecks Identified
+
 1. **No KV cache** → redundant attention recomputation each step → O(n²) per token
 2. **No batching** → single sequence, GPU compute units mostly idle
 3. **fp32** → half the throughput vs fp16/bf16 on tensor cores
@@ -124,17 +128,18 @@ MFU = (2 × 124 × 10⁶ × 130) / (19.5 × 10¹²) × 100 = 0.17%
 
 ### Baseline Reference for Future Optimization
 
-| Metric | Baseline Value |
-|--------|---------------|
-| Throughput | ~130–170 tok/s |
-| MFU | ~0.17% |
-| Peak Memory | 540–765 MB |
-| GPU Utilization | 36–98% |
-| Latency (50 tokens, short prompt) | ~0.4s |
-| CUDA time per token | ~2.4 ms |
-| Dominant op | `aten::addmm` (53%) |
+| Metric                            | Baseline Value      |
+|-----------------------------------|---------------------|
+| Throughput                        | ~130–170 tok/s      |
+| MFU                               | ~0.17%              |
+| Peak Memory                       | 540–765 MB          |
+| GPU Utilization                   | 36–98%              |
+| Latency (50 tokens, short prompt) | ~0.4s               |
+| CUDA time per token               | ~2.4 ms             |
+| Dominant op                       | `aten::addmm` (53%) |
 
 These numbers are the baseline to beat. Expected improvements:
+
 - **KV Cache** (Day 9): Reduces per-step attention from O(n²) to O(n) → significant tok/s improvement for longer sequences
 - **Batching** (Day 11): Multiple sequences in parallel → higher MFU and throughput
 - **fp16** (future): 2× tensor core throughput → higher MFU

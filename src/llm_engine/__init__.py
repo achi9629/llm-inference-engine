@@ -7,6 +7,7 @@ from .utils.gpu_monitor import GPUMonitor
 from .utils.profiler import InferenceProfiler
 from .cache.kv_cache import KVCache
 from .cache.continuous_kv_cache import ContinuousKVCache
+from .cache.memory_allocator import MemoryAllocator
 from .model.GPT2.attention import MultiHeadAttention
 from .scheduler.request import Request, RequestState
 from .scheduler.batch_scheduler import BatchScheduler
@@ -22,6 +23,7 @@ __all__ = [
             "InferenceProfiler",
             "KVCache",
             "ContinuousKVCache",
+            "MemoryAllocator",
             "MultiHeadAttention",
             "Request",
             "RequestState",

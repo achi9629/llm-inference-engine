@@ -21,3 +21,6 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_padding
 
 # test_scheduler
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_scheduler.py -v --log-cli-level=INFO
+
+# test_memory_allocator
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_memory_allocator.py -v --log-cli-level=INFO

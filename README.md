@@ -61,7 +61,7 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 | 128        | 11,368 tok/s | 73.3x           | 14,359 MB   |
 | 512        | 18,346 tok/s | **118.3x**      | 55,831 MB   |
 
-> Full benchmark details: [baseline_benchmark.md](docs/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/continuous_batching_benchmark.md)
+> Full benchmark details: [baseline_benchmark.md](docs/benchmark/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/benchmark/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/benchmark/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/benchmark/continuous_batching_benchmark.md)
 
 ## Project Structure
 

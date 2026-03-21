@@ -45,7 +45,7 @@
 - Peak memory is slightly higher than baseline (643–714 MB vs 580–765 MB) due to pre-allocated cache tensors, but stays constant across decode steps
 - GPU utilization is lower (30–33% vs 73–98%) — each decode step processes only 1 token instead of full sequence, so matmuls are smaller (matrix-vector vs matrix-matrix)
 
-![Latency: Baseline vs KV Cache](../assets/plots/latency_comparison.png)
+![Latency: Baseline vs KV Cache](../../assets/plots/latency_comparison.png)
 
 ---
 
@@ -94,7 +94,7 @@
 - **Peak memory is constant** at 643.8 MB — pre-allocated cache means no memory growth during generation
 - Baseline memory grew from 540 → 930 MB over the same range
 
-![Throughput: Baseline vs KV Cache](../assets/plots/throughput_comparison.png)
+![Throughput: Baseline vs KV Cache](../../assets/plots/throughput_comparison.png)
 
 ---
 
@@ -175,7 +175,7 @@
 | Dominant CUDA op | `addmm` 53% | `addmm` 41% | Shifted to gemv |
 | Throughput scaling | Degrades O(n²) | Flat O(n) | Constant decode cost |
 
-![Peak Memory: Baseline vs KV Cache](../assets/plots/memory_comparison.png)
+![Peak Memory: Baseline vs KV Cache](../../assets/plots/memory_comparison.png)
 
 ### Why KV Cache Works
 

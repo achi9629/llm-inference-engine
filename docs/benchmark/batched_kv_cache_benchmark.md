@@ -39,7 +39,7 @@
 | 256        | 12,800       | 0.794       | 16,125.4 | 28,182.8      | 55           | 20.58   |
 | 512        | 25,600       | 1.395       | 18,346.3 | 55,830.8      | 44           | 23.42   |
 
-![Throughput vs Batch Size](../assets/plots/batch_throughput.png)
+![Throughput vs Batch Size](../../assets/plots/batch_throughput.png)
 
 ### vs Single Request (KV Cache, batch_size=1)
 
@@ -79,7 +79,7 @@
 | Peak Memory | 643 MB                | 1,399 MB       | 14,359 MB        | 55,831 MB        |
 | Latency     | 0.322s                | 0.351s         | 0.563s           | 1.395s           |
 
-![MFU vs Batch Size](../assets/plots/batch_mfu.png)
+![MFU vs Batch Size](../../assets/plots/batch_mfu.png)
 
 ### Why Batching Works
 
@@ -96,7 +96,7 @@
 | Throughput-optimized (offline) | 128-256                | Best throughput/memory tradeoff         |
 | Maximum throughput             | 512                    | Near GPU saturation, but 55 GB memory   |
 
-![Memory vs Batch Size](../assets/plots/batch_memory.png)
+![Memory vs Batch Size](../../assets/plots/batch_memory.png)
 
 ### Remaining Bottlenecks
 
