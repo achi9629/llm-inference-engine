@@ -93,18 +93,20 @@
 
 ### Day 13 - Continuous Batching + Unit Tests (Mar 21)
 
-- ⬜ Implement `src/llm_engine/scheduler/continuous_batching.py` (add new requests mid-batch, evict finished ones)
-- ⬜ Maintain KV cache separately for each sequence
-- ⬜ Measure GPU utilization improvement vs static batching
-- ⬜ Write `tests/test_attention.py`
-- ⬜ Write `tests/test_kv_cache.py`
-- ⬜ Write `tests/test_generator.py`
-- ⬜ Write `tests/test_scheduler.py`
+- ✅ Implement `src/llm_engine/scheduler/continuous_batching.py` (add new requests mid-batch, evict finished ones)
+- ✅ Maintain KV cache separately for each sequence
+- ✅ Measure GPU utilization improvement vs static batching
+- ✅ Write `tests/test_attention.py`
+- ✅ Write `tests/test_kv_cache.py`
+- ✅ Write `tests/test_generator.py`
+- ✅ Write `tests/test_scheduler.py`
+- ✅ Write test cases for continuous batching in the `tests/test_scheduler.py`
+- ✅ Write `tests/test_continuous_kv_cache.py`
 
 ### Day 14 - Test Stabilization (Mar 22)
 
-- ⬜ All tests passing
-- ⬜ Fix failing edge cases discovered in Week 2 integrations
+- ✅ All tests passing
+- ✅ Fix failing edge cases discovered in Week 2 integrations
 
 ---
 
@@ -180,7 +182,7 @@
 | Baseline (no cache, single request) | 7 | latency, tokens/sec, GPU util | [baseline.md](baseline_benchmark.md) |
 | + KV Cache | 9 | same prompts, show speedup | [kv_cache.md](kv_cache_benchmark.md) |
 | + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](batched_kv_cache_benchmark.md) |
-| + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | link |
+| + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | [continuous_batching.md](continuous_batching_benchmark.md) |
 | + Paged KV Cache | 16 | memory usage under concurrent requests | link |
 | Full Load Test | 18 | 8-32 users, p95 latency, tokens/sec, GPU memory | link |
 

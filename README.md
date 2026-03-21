@@ -10,6 +10,7 @@ A lightweight LLM inference engine built from scratch in PyTorch, inspired by [v
 - Benchmark suite (latency, throughput, GPU profiler)
 - Pretrained weight loading from OpenAI GPT-2 checkpoints
 - **Batch Inference** — static batching with left padding, attention masks, per-sequence EOS tracking (up to 118x throughput gain)
+- **Continuous batching scheduler** — iteration-level scheduling with per-sequence KV cache tracking, dynamic slot eviction and refill (step-based scheduler)
 
 ## Features (Planned)
 
@@ -60,7 +61,7 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 | 128        | 11,368 tok/s | 73.3x           | 14,359 MB   |
 | 512        | 18,346 tok/s | **118.3x**      | 55,831 MB   |
 
-> Full benchmark details: [baseline_benchmark.md](docs/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/batched_kv_cache_benchmark.md)
+> Full benchmark details: [baseline_benchmark.md](docs/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/continuous_batching_benchmark.md)
 
 ## Project Structure
 
@@ -70,9 +71,9 @@ src/llm_engine/
 ├── model/GPT2/           # Custom transformer (attention, block, feedforward)
 ├── inference/            # Generator, sampler, inference engine
 ├── cache/                # KV cache implementation
+├── scheduler/            # Batch scheduler, continuous batching scheduler
 ├── tokenizer/            # HuggingFace tokenizer wrapper
 ├── utils/                # Profiler, GPU monitor, weight loader
-
 ```
 
 ## Quick Start
@@ -107,6 +108,7 @@ PYTHONPATH=. python benchmarks/latency/latency_benchmark.py
 
 # Throughput benchmark
 PYTHONPATH=. python benchmarks/throughput/throughput_benchmark.py
+PYTHONPATH=. python benchmarks/throughput/continuous_batching_benchmark.py
 
 # GPU profiler
 PYTHONPATH=. python -B benchmarks/profiler/profiler_benchmark.py

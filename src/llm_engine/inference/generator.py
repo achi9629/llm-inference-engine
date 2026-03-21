@@ -123,12 +123,6 @@ def generator(model: object,
                 # During non-cached generation, we feed the entire sequence each step.
                 input_ids = token_ids
             
-            # TODO: Replace all-EOS batch stop with per-sequence finished-mask handling.
-            # * This allows each sequence to stop independently during batched decoding.
-            # if (output_token_id == eos_token_id).all():
-            #     stop_reason = "All sequences generated EOS token."
-            #     break
-            
             if was_1d:
                 
                 if output_token_id.item() == eos_token_id:

@@ -141,7 +141,122 @@ Tokenization moves from inside generate() to when the request arrives.
 
 test_scheduler.py simulates the full flow:
 
-- 7 prompts created as Request objects
+- 6 prompts created as Request objects
 - 3 added to scheduler, 2 scheduled (max_batch=2)
 - 2 more added, 1 completed
 - Asserts: request 0 = finished, request 1 = running, request 2 = pending
+
+---
+
+# Day 13: Continuous Batching + Per-Sequence KV Cache
+
+## Why Continuous Batching?
+
+Static batching (BatchScheduler) has a fundamental waste problem:
+
+```bash
+Static Batching (batch_size=4):
+
+Step 1:  [A, B, C, D]   all running
+Step 10: [A, B, C, D]   A finishes early (hit EOS at step 10)
+Step 11: [_, B, C, D]   slot 0 is WASTED -- GPU computes padding for empty slot
+Step 20: [_, _, C, D]   B finishes -- now 2 slots wasted
+Step 30: [_, _, _, D]   only D running -- 75% GPU waste
+Step 40: [_, _, _, _]   D finishes -- NOW we can start next batch
+```
+
+**ML analogy:** Like training with a DataLoader that waits for the slowest sample in the batch before loading the next batch. Continuous batching is like replacing finished samples immediately.
+
+```bash
+Continuous Batching (batch_size=4):
+
+Step 1:  [A, B, C, D]   all running
+Step 10: [E, B, C, D]   A finishes -> E fills slot 0 immediately
+Step 20: [E, F, C, D]   B finishes -> F fills slot 1 immediately
+Step 30: [E, F, G, D]   C finishes -> G fills slot 2 immediately
+```
+
+GPU stays full at all times.
+
+## ContinuousBatchingScheduler API
+
+| Method               | What It Does                                          |
+|----------------------|-------------------------------------------------------|
+| add_request(request) | Add to internal queue                                 |
+| step()               | Evict finished, fill empty slots, return active batch |
+| complete_request(id) | Mark request as FINISHED                              |
+| get_active_batch()   | List currently active requests (read-only)            |
+| has_work()           | True if queue has pending or running requests         |
+
+## How step() Works -- The 3-Phase Loop
+
+```bash
+step() called each generation iteration:
+
+Phase 1: EVICT
+  for each request in running_requests:
+    if request.is_finished() -> remove from running_requests
+
+Phase 2: FILL
+  num_empty = max_batch_size - len(running_requests)
+  pop up to num_empty requests from queue
+  mark them RUNNING, add to running_requests
+
+Phase 3: RETURN
+  return list(running_requests.values())
+```
+
+## Static vs Continuous -- Side by Side
+
+| Aspect              | BatchScheduler (Static)          | ContinuousBatchingScheduler      |
+|---------------------|----------------------------------|----------------------------------|
+| When to refill      | After entire batch finishes      | Every step                       |
+| GPU utilization     | Degrades as requests finish      | Stays near 100%                  |
+| Key method          | schedule() (one-time)            | step() (called every iteration)  |
+| Request replacement | All-or-nothing                   | Individual slot replacement      |
+| Queue drain rate    | Bursty (batch at a time)         | Smooth (one slot at a time)      |
+
+## ContinuousKVCache -- Per-Sequence Tracking
+
+The original `KVCache` tracks a single `seq_len` (int) for the whole batch -- all sequences share the same position pointer. This breaks with continuous batching because:
+
+- Sequence A might be at position 50 (nearly done)
+- Sequence E just joined at position 0 (just started)
+
+`ContinuousKVCache` fixes this:
+
+| Feature          | KVCache (static)            | ContinuousKVCache (continuous)      |
+|------------------|-----------------------------|-------------------------------------|
+| seq_len          | Single int                  | List[int], one per batch slot       |
+| update_cache()   | Same start pos for all      | Per-batch-idx start positions       |
+| reset            | reset_cache() (zeros all)   | reset_slot(batch_idx) (zeros one)   |
+| increment_seq_len| (layer_idx, T_new)          | (batch_idx, layer_idx, T_new)       |
+
+### reset_slot() -- The Key Operation
+
+When a sequence finishes and a new one takes its slot:
+
+```bash
+Before reset_slot(0):
+  slot 0: seq_len=50, cache filled with 50 tokens of old sequence
+  slot 1: seq_len=30, cache filled with 30 tokens (still running)
+
+After reset_slot(0):
+  slot 0: seq_len=0,  cache ZEROED (ready for new sequence)
+  slot 1: seq_len=30, cache UNTOUCHED (still running)
+```
+
+## Test Verification
+
+### test_scheduler.py (2 tests)
+
+- **test_scheduler**: BatchScheduler flow -- add, schedule, complete, assert states
+- **test_continuous_batching_step**: 4-phase test -- fill slots, evict+refill, drain, empty
+
+### test_continuous_kv_cache.py (5 tests)
+
+- **test_initialization**: seq_len is [0, 0], shapes correct, all zeros
+- **test_per_sequence_seq_len**: seq_len only updates on last layer
+- **test_reset_slot**: zeros one slot, other slot untouched
+- **test_reset_cache**: full reset, everything zeroed
+- **test_update_cache_per_batch_idx**: prefill 3 + decode 1, verify positions match
