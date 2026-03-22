@@ -119,10 +119,11 @@
 
 ### Day 16 - Paged KV Cache: Block Table + Integration (Mar 24)
 
-- ⬜ Implement `src/llm_engine/cache/block_table.py` (per-request logical -> physical block mapping)
-- ⬜ Implement `src/llm_engine/cache/paged_kv_cache.py` (paged attention cache using allocator + block table)
+- ✅ Implement `src/llm_engine/cache/block_table.py` (per-request logical -> physical block mapping)
+- ✅ Implement `src/llm_engine/cache/paged_kv_cache.py` (paged attention cache using allocator + block table)
+- ✅ Write `tests/test_block_table.py`
+- ✅ Write `tests/test_paged_kv_cache.py`
 - ⬜ Integrate paged cache with continuous batching scheduler
-- ⬜ Write `tests/test_paged_kv_cache.py`
 - ⬜ Measure GPU memory usage under concurrent requests
 - ⬜ Reuse freed blocks when sequences complete
 

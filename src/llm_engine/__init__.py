@@ -8,6 +8,8 @@ from .utils.profiler import InferenceProfiler
 from .cache.kv_cache import KVCache
 from .cache.continuous_kv_cache import ContinuousKVCache
 from .cache.memory_allocator import MemoryAllocator
+from .cache.block_table import BlockTable
+from .cache.paged_kv_cache import PagedKVCache  
 from .model.GPT2.attention import MultiHeadAttention
 from .scheduler.request import Request, RequestState
 from .scheduler.batch_scheduler import BatchScheduler
@@ -24,6 +26,8 @@ __all__ = [
             "KVCache",
             "ContinuousKVCache",
             "MemoryAllocator",
+            "BlockTable",
+            "PagedKVCache",
             "MultiHeadAttention",
             "Request",
             "RequestState",

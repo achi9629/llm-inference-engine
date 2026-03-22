@@ -149,3 +149,155 @@ A single `set` gives O(1) for all operations. But `set.pop()` returns an arbitra
 
 - **Determinism**: allocating 3 blocks always gives `[0, 1, 2]`, not a random set — easier to debug, test, and reproduce issues
 - **Predictable reuse**: freed blocks are appended to the back and reissued in order, making allocation patterns reproducible across runs
+
+---
+
+# Day 16: Block Table + Paged KV Cache
+
+## What is the Block Table?
+
+**Analogy: Guest registry at the hotel.**
+The front desk (allocator) tracks room availability. The guest registry tracks *which guest is in which rooms*. When Guest A checks in and gets rooms [0, 1, 2], the registry records:
+
+```
+Guest Registry (Block Table):
+  Seq A → [0, 1, 2]     (3 blocks, ~48 tokens at block_size=16)
+  Seq B → [3]            (1 block,  ~16 tokens)
+  Seq C → [4, 5]         (2 blocks, ~32 tokens)
+```
+
+When Seq A finishes, the registry deletes its entry and tells the front desk to reclaim rooms [0, 1, 2].
+
+The Block Table is a dict: `{seq_id: List[int]}` — maps sequence IDs to their ordered list of block IDs.
+
+---
+
+## How Tokens Map to Blocks
+
+With `block_size=16`, token positions map to blocks like this:
+
+```
+Token positions:  [0..15]  [16..31]  [32..47]  [48..63]
+                     ↓        ↓         ↓         ↓
+Block index:         0        1         2         3
+                     ↓        ↓         ↓         ↓
+Block IDs (Seq A): [5]      [2]       [7]       [0]    ← scattered in GPU memory!
+```
+
+To find where token 35 lives:
+
+```
+block_index = 35 // 16 = 2        → 3rd block in sequence's list
+offset      = 35 % 16  = 3        → 4th position within that block
+block_id    = block_table[seq_id][2] = 7
+GPU location = kv_cache[block_id=7][offset=3]
+```
+
+This is exactly like OS page tables: virtual address → (page number, offset) → physical address.
+
+---
+
+## What is the Paged KV Cache?
+
+**Analogy: The actual hotel rooms with beds.**
+The allocator tracks room numbers. The block table maps guests to rooms. The Paged KV Cache is the physical rooms — GPU tensors where K/V data is stored.
+
+Instead of allocating per-sequence:
+
+```python
+# Old: ContinuousKVCache
+torch.zeros(batch_size, n_heads, max_seq_len, head_dim)  # per layer
+```
+
+We allocate a pool of blocks:
+
+```python
+# New: PagedKVCache
+torch.zeros(num_blocks, n_heads, block_size, head_dim)  # per layer, shared pool
+```
+
+The shape changes from `(batch_size, n_heads, max_seq_len, head_dim)` to `(num_blocks, n_heads, block_size, head_dim)`. The first dimension is no longer "which sequence" — it's "which block." A single sequence's data is scattered across multiple blocks.
+
+---
+
+## Reading and Writing with the Block Table
+
+**Write (during decode):**
+Sequence A generates a new token. Where does its K/V go?
+
+```
+seq_len = 35
+block_index = 35 // 16 = 2
+offset      = 35 % 16  = 3
+block_id    = block_table["A"][2]  → say block 7
+
+k_cache[layer][block_id=7, :, offset=3, :] = k_new
+v_cache[layer][block_id=7, :, offset=3, :] = v_new
+```
+
+**When a block fills up (offset reaches block_size):**
+Allocate a new block from the allocator and append to the sequence's block table entry.
+
+```
+seq_len = 48  → block_index = 3, but Seq A only has 3 blocks [5, 2, 7]
+→ allocator.allocate(1) returns [0]
+→ block_table["A"] becomes [5, 2, 7, 0]
+→ write to block 0, offset 0
+```
+
+**Read (during attention):**
+To compute attention, gather all K/V for Seq A by walking its block table:
+
+```
+block_table["A"] = [5, 2, 7, 0]
+K_full = concat(k_cache[layer][5], k_cache[layer][2], k_cache[layer][7], k_cache[layer][0])
+                  ↑ 16 tokens     ↑ 16 tokens       ↑ 16 tokens       ↑ partial
+```
+
+---
+
+## Block Table API
+
+| Method | What it does |
+|--------|-------------|
+| `add_sequence(seq_id)` | Create empty entry for a new sequence |
+| `allocate_blocks(seq_id, num_blocks)` | Ask allocator for N blocks, append to sequence's entry |
+| `get_block_ids(seq_id)` | Return the ordered list of block IDs for a sequence |
+| `get_physical_block(seq_id, logical_index)` | Return the block ID at a given position in the sequence's list |
+| `free_sequence(seq_id)` | Free all blocks for a sequence (return to allocator), delete entry |
+| `num_blocks(seq_id)` | How many blocks a sequence currently holds |
+
+## Paged KV Cache API
+
+| Method | What it does |
+|--------|-------------|
+| `__init__(num_blocks, n_layers, n_heads, block_size, head_dim)` | Pre-allocate pool: `torch.zeros(num_blocks, n_heads, block_size, head_dim)` per layer |
+| `write(layer_idx, block_id, offset, k, v)` | Write K/V at `cache[layer][block_id, :, offset, :]` |
+| `read(layer_idx, block_ids)` | Gather K/V from scattered blocks, return concatenated tensors |
+| `reset_blocks(block_ids)` | Zero out specific blocks across all layers |
+
+---
+
+## How They All Connect
+
+```
+Request arrives
+    → ContinuousBatchingScheduler.add_request()
+    → BlockTable.add_sequence(seq_id)
+    → BlockTable.allocate_blocks(seq_id, num_needed)
+        → MemoryAllocator.allocate(num_needed) → returns block IDs
+
+Each decode step
+    → Compute K/V for new token
+    → BlockTable.get_physical_block(seq_id, token_pos // block_size)
+    → PagedKVCache.write(layer, block_id, offset, k, v)
+    → If block full → BlockTable.allocate_blocks(seq_id, 1)
+
+Attention
+    → BlockTable.get_block_ids(seq_id) → [5, 2, 7, 0]
+    → PagedKVCache.read(layer, [5, 2, 7, 0]) → concatenated K, V
+
+Request finishes
+    → BlockTable.free_sequence(seq_id)
+        → MemoryAllocator.free(block_ids)
+```

@@ -70,7 +70,7 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 src/llm_engine/
 ├── model/GPT2/           # Custom transformer (attention, block, feedforward)
 ├── inference/            # Generator, sampler, inference engine
-├── cache/                # KV cache implementation
+├── cache/                # KV cache, memory allocator, block table, paged kv cache implementation 
 ├── scheduler/            # Batch scheduler, continuous batching scheduler
 ├── tokenizer/            # HuggingFace tokenizer wrapper
 ├── utils/                # Profiler, GPU monitor, weight loader

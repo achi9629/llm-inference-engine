@@ -3,18 +3,26 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inferen
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v -k "test_smoke" --log-cli-level=INFO
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v -k "test_correctness" --log-cli-level=INFO
 
+# test_generator
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generator.py -v --log-cli-level=INFO
+
 test_attention
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_attention.py -v
 
 # test_kv_cache
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_kv_cache.py -v
+
+# test_continuous_kv_cache
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_continuous_kv_cache.py -v
 
-# test_generator
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generator.py -v --log-cli-level=INFO
+# test_memory_allocator
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_memory_allocator.py -v --log-cli-level=INFO
 
-# test_inference
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inference.py -v --log-cli-level=INFO
+# test_block_table.py
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_block_table.py -v --log-cli-level=INFO
+
+# test_paged_kv_cache
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_paged_kv_cache.py -v --log-cli-level=INFO
 
 # test_padding_mask
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_padding_mask.py -v --log-cli-level=INFO
@@ -22,5 +30,3 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_padding
 # test_scheduler
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_scheduler.py -v --log-cli-level=INFO
 
-# test_memory_allocator
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_memory_allocator.py -v --log-cli-level=INFO
