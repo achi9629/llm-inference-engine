@@ -123,9 +123,14 @@
 - ✅ Implement `src/llm_engine/cache/paged_kv_cache.py` (paged attention cache using allocator + block table)
 - ✅ Write `tests/test_block_table.py`
 - ✅ Write `tests/test_paged_kv_cache.py`
-- ⬜ Integrate paged cache with continuous batching scheduler
+- ✅ Integrate paged cache with continuous batching scheduler
+- ✅ Reuse freed blocks when sequences complete
+- ✅ Forward pass integration (PagedCacheContext adapter)
+- ✅ Implement `src/llm_engine/cache/paged_cache_context.py`
+- ✅ Write `tests/test_paged_cache_context.py`
+- ⬜ Integrate PagedCacheContext with generator.py (pass adapter as kv_cache argument)
+- ⬜ Integrate PagedCacheContext with inference_engine.py (create adapter from paged cache + block table)
 - ⬜ Measure GPU memory usage under concurrent requests
-- ⬜ Reuse freed blocks when sequences complete
 
 ### Day 17 - Serving Layer (Mar 25)
 

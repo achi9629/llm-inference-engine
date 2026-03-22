@@ -12,7 +12,7 @@ Cache shape per layer: (num_blocks, n_heads, block_size, head_dim)
 '''
 
 import torch # type: ignore
-from typing import List
+from typing import List, Tuple
 
 class PagedKVCache:
     def __init__(self,
@@ -110,7 +110,7 @@ class PagedKVCache:
     def read(self,
              layer_idx: int,
              block_ids: List[int],
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         
         '''
         Description:
@@ -121,7 +121,7 @@ class PagedKVCache:
             layer_idx (int): The transformer layer index.
             block_ids (List[int]): Ordered list of physical block IDs for a sequence.
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: Concatenated K and V tensors,
+            Tuple[torch.Tensor, torch.Tensor]: Concatenated K and V tensors,
                 each with shape (1, n_heads, len(block_ids) * block_size, head_dim).
         '''
         

@@ -357,3 +357,126 @@ Example: prompt = 35 tokens, block_size = 16
 - Step 1: 2 requests enter → 4 blocks allocated, 12 free
 - Step 2: complete one, step → freed 2 blocks, new request gets 2 → still 12 free
 - Step 3: complete remaining, step → all freed, 16 free, has_work=False
+
+---
+
+## Day 16: Forward Pass Integration — Paged Cache + Attention Layer
+
+### The Problem: Interface Mismatch
+
+The current attention layer (`attention.py`, line 78) has a simple contract with the KV cache:
+
+```
+k, v = kv_cache.update_cache(layer_idx, k, v)
+```
+
+`update_cache()` does two jobs in one call:
+1. **Stores** the new K/V tokens contiguously in a pre-allocated slab
+2. **Returns** the full K/V history (old + new) as a batch tensor of shape `(B, n_heads, T_total, head_dim)`
+
+The attention layer then uses `k` and `v` directly for `Q @ K^T` — no further thought needed.
+
+`PagedKVCache` has a fundamentally different interface:
+- `write()`: stores one token at a time to a specific block + offset
+- `read()`: gathers scattered blocks for one sequence, returns `(1, n_heads, num_blocks * block_size, head_dim)`
+
+Three mismatches:
+
+| | `update_cache()` (contiguous) | `write()`/`read()` (paged) |
+|---|---|---|
+| Granularity | Whole batch at once | Per-sequence |
+| Metadata needed | Just `layer_idx` | `block_id`, `offset`, `seq_id` |
+| Output | Stacked batch `(B, ...)` | Single sequence `(1, ...)` |
+
+---
+
+### The Adapter Pattern (Hotel Concierge Analogy)
+
+**Analogy: Hiring a concierge between the guest's assistant and the hotel.**
+
+The guest's personal assistant (attention layer) has been trained to work with a single-building apartment (contiguous cache) — they just say "store my stuff on the next shelf" and "give me all my stuff."
+
+Rather than retraining the assistant, you hire a **concierge** — someone who sits between the assistant and the hotel, translating requests:
+
+- **Assistant says "store this"** → Concierge looks up the guest registry, finds the right room number and shelf position, stores it in the hotel
+- **Assistant says "give me everything"** → Concierge looks up all rooms for this guest, retrieves items from each room, arranges them in order, hands back a neat stack
+
+This concierge is a **wrapper object** (`PagedCacheContext`) that bundles:
+- The `paged_kv_cache` (the hotel)
+- The `block_table` (the guest registry)
+- The current batch's sequence IDs and token positions (who's checking in right now)
+
+It exposes the same `update_cache(layer_idx, k, v)` interface, so the attention layer doesn't change at all — **duck typing** handles the rest.
+
+---
+
+### Data Flow Inside `update_cache()` (Adapter)
+
+During one decode step with a batch of 3 sequences:
+
+**Write phase:**
+For each sequence `i` in the batch:
+```
+1. seq_id → block_table.get_block_ids(seq_id) → e.g. [5, 12, 3]
+2. token_position = number of tokens generated so far
+3. block_index = token_position // block_size    → which block in the list
+4. offset      = token_position % block_size     → which slot within that block
+5. block_id    = block_ids[block_index]          → physical block ID
+6. paged_kv_cache.write(layer_idx, block_id, offset, k[i], v[i])
+```
+
+**Read phase:**
+For each sequence `i` in the batch:
+```
+1. block_ids = block_table.get_block_ids(seq_id) → [5, 12, 3]
+2. k_seq, v_seq = paged_kv_cache.read(layer_idx, block_ids)
+   → shape: (1, n_heads, num_blocks * block_size, head_dim)
+3. Slice to valid tokens: k_seq[:, :, :actual_seq_len, :]
+```
+
+Stack all sequences into `(B, n_heads, max_T_total, head_dim)`, padding shorter ones.
+
+---
+
+### The Trailing-Zeros Problem
+
+`read()` returns ALL slots in ALL blocks — including empty/unused slots in the last block.
+
+```
+Sequence with 5 tokens, block_size=4:
+  Block 0: [t0, t1, t2, t3]    ← fully used
+  Block 1: [t4,  0,  0,  0]    ← 3 empty slots
+
+read() returns 8 positions: [t0, t1, t2, t3, t4, 0, 0, 0]
+```
+
+Those trailing zeros would **corrupt attention scores** — they appear as valid "past" positions (not future, so causal mask won't help). The zeros get multiplied with Q, producing small but non-zero attention values directed at empty positions.
+
+**Solution: Slice after read.**
+
+```
+k_seq = k_seq[:, :, :actual_seq_len, :]   # (1, n_heads, 5, head_dim)
+```
+
+This requires tracking per-sequence token count, which the adapter already has via the batch metadata.
+
+---
+
+### Files That Need to Change
+
+| File | Change | Reason |
+|---|---|---|
+| **New: adapter/wrapper class** | Bundles paged_kv_cache + block_table + batch metadata. Exposes `update_cache()` that internally calls write + read + stack. Also needs `seq_len` property for position embedding offset in transformer.py. | Isolates all paged logic behind the same interface |
+| **generator.py** | Create adapter wrapper each step with current batch's sequence metadata. Pass it as the `kv_cache` argument. | Generator knows which sequences are in the batch |
+| **attention.py** | **No changes** | Duck typing — calls `kv_cache.update_cache(layer_idx, k, v)` as before |
+| **block.py** | **No changes** | Just pipes `kv_cache` through |
+| **transformer.py** | **No changes** | Just pipes `kv_cache` through, reads `kv_cache.seq_len` for position offset |
+
+### Why This Design?
+
+The adapter pattern completely isolates the paged complexity:
+
+- The model code (`attention.py`, `block.py`, `transformer.py`) stays **unchanged**
+- All paged logic lives in the wrapper + the cache/block_table modules already built
+- Existing tests for attention, KVCache, ContinuousKVCache continue to pass — no backward compatibility break
+- Switching between contiguous and paged cache is just a matter of which object you pass as `kv_cache`

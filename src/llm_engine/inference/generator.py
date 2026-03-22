@@ -1,4 +1,5 @@
 import torch # type: ignore
+from typing import Tuple
 
 from .sampler import greedy_sampler
 
@@ -15,7 +16,7 @@ def generator(model: object,
               padding_mask: torch.Tensor = None,
               sampling_method: str = 'greedy',
               kv_cache: object = None,
-    ) -> tuple[torch.Tensor, int, str]:
+    ) -> Tuple[torch.Tensor, int, str]:
     
     """
     Generate tokens autoregressively using greedy sampling.
@@ -47,7 +48,10 @@ def generator(model: object,
         sampling_method (str): Sampling strategy. Currently supports "greedy".
 
     Returns:
-        torch.Tensor: Generated token IDs including original prompt tokens.
+        Tuple[torch.Tensor, int, str]: A tuple containing:
+            - Generated token IDs (same shape as input).
+            - Number of tokens generated.
+            - Stop reason (e.g., "Generated EOS token", "Reached max_tokens limit").
 
     Raises:
         TypeError: If token_ids is not a torch.Tensor.
