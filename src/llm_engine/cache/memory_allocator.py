@@ -79,7 +79,7 @@ class MemoryAllocator:
             self.free_blocks.append(block_id)
         
     @property
-    def num_free_blocks(self):
+    def num_free_blocks(self) -> int:
         
         '''
         Description:

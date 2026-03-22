@@ -9,31 +9,51 @@ fill the empty slots immediately.
 
 This maximizes GPU utilization by keeping the batch full at all times, even 
 when requests finish at different times.
+
+Optionally integrates with PagedKVCache via BlockTable:
+    - On evict: frees blocks and resets paged cache for finished sequences
+    - On fill: allocates initial blocks for new sequences
+    - Write/read during decode happens in the attention layer, not here
 """
 
-from typing import List
+import math
+from typing import List, Optional
 
 from .request_queue import RequestQueue
 from .request import Request, RequestState
+from ..cache.block_table import BlockTable
+from ..cache.paged_kv_cache import PagedKVCache
 
 class ContinuousBatchingScheduler:
-    def __init__(self, max_batch_size: int) ->None:
+    def __init__(self, 
+                 max_batch_size: int,
+                 block_table: Optional[BlockTable] = None,
+                 paged_kv_cache: Optional[PagedKVCache] = None,
+        ) ->None:
         
         '''
         Description:
-            Initialize the continuous batching scheduler.
+            Initialize the continuous batching scheduler with optional paged memory management.
+            When block_table and paged_kv_cache are provided, the scheduler automatically
+            allocates blocks for new requests and frees blocks when requests finish.
         Args:
-            max_batch_size: The maximum number of requests that can be processed in a batch simultaneously
+            max_batch_size (int): Maximum number of requests in the active batch.
+            block_table (Optional[BlockTable]): Block table for paged KV cache management. None disables paging.
+            paged_kv_cache (Optional[PagedKVCache]): Paged KV cache for block-level reset on eviction. None disables paging.
         Returns:
             None
         '''
         
         self.request_queue = RequestQueue()
         self.max_batch_size = max_batch_size
+        self.block_table = block_table
+        self.paged_kv_cache = paged_kv_cache
         self.running_requests = {}
         self.completed_requests = {}
         
-    def add_request(self, request: Request) -> None:
+    def add_request(self, 
+                    request: Request
+        ) -> None:
         
         '''
         Description:
@@ -50,18 +70,25 @@ class ContinuousBatchingScheduler:
         
         '''
         Description:
-            Performs one scheduling step: evicts finished requests from the active batch,
-            fills empty slots with pending requests from the queue, and returns the
-            current active batch for the next generation iteration.
+            Performs one scheduling step:
+                Phase 1 — Evict finished requests from running batch.
+                    If paged: free blocks via block_table, reset via paged_kv_cache.
+                Phase 2 — Fill empty slots with pending requests from queue.
+                    If paged: add sequence to block_table, allocate initial blocks (ceil(token_ids / block_size)).
+                Phase 3 — Return current active batch.
         Args:
             None
         Returns:
-            A list of currently active requests in the batch after the scheduling step
+            List[Request]: Currently active requests after the scheduling step.
         '''
         
         # 1. Remove finished requests
-        finished_ids = [rid for rid, req in self.running_requests.items() if req.is_finished()]
-        for rid in finished_ids:
+        self.finished_ids = [rid for rid, req in self.running_requests.items() if req.is_finished()]
+        for rid in self.finished_ids:
+            if self.block_table:
+                block_ids = self.block_table.get_block_ids(seq_id = rid)
+                self.paged_kv_cache.reset_blocks(block_ids)
+                self.block_table.free_sequence(rid)
             self.running_requests.pop(rid)
             
         # 2. Fill empty slots from queue
@@ -70,6 +97,10 @@ class ContinuousBatchingScheduler:
         for req in new_requests:
             req.set_state(RequestState.RUNNING)
             self.running_requests[req.request_id] = req
+            if self.block_table:
+                self.block_table.add_sequence(req.request_id)
+                num_initial_blocks = math.ceil(len(req.token_ids) / self.block_table.block_size)
+                self.block_table.allocate_blocks(req.request_id, num_initial_blocks)
             
         # 3. Return active batch
         return list(self.running_requests.values())
@@ -112,7 +143,7 @@ class ContinuousBatchingScheduler:
         '''
         
         if request_id in self.running_requests:
-            req = self.running_requests.pop(request_id)
+            req = self.running_requests[request_id]
             req.set_state(RequestState.FINISHED)
             self.completed_requests[request_id] = req
         else:

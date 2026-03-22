@@ -301,3 +301,59 @@ Request finishes
     → BlockTable.free_sequence(seq_id)
         → MemoryAllocator.free(block_ids)
 ```
+
+---
+
+## Day 16 Integration: Paged Cache + Continuous Batching Scheduler
+
+### What Changed
+
+`ContinuousBatchingScheduler` now optionally accepts `block_table` and `paged_kv_cache`. When provided, `step()` manages memory automatically:
+
+```
+step() without paging:                step() with paging:
+
+Phase 1: Evict finished               Phase 1: Evict finished
+  pop from running_requests              + block_table.free_sequence(rid)
+                                         + paged_kv_cache.reset_blocks(block_ids)
+                                         pop from running_requests
+
+Phase 2: Fill empty slots              Phase 2: Fill empty slots
+  pop from queue, mark RUNNING           pop from queue, mark RUNNING
+                                         + block_table.add_sequence(req_id)
+                                         + block_table.allocate_blocks(req_id, ceil(tokens/block_size))
+
+Phase 3: Return active batch           Phase 3: Return active batch
+```
+
+### Responsibility Split
+
+| Component | Responsibility | When |
+|-----------|---------------|------|
+| Scheduler (`step()`) | Allocate initial blocks, free blocks on evict | On enter/exit batch |
+| Attention layer | `paged_kv_cache.write()` and `read()` | Each decode step |
+| Scheduler does NOT | Write/read K/V data, manage offsets within blocks | Never |
+
+The scheduler manages the **lifecycle** (birth and death of block allocations). The attention layer manages the **data flow** (writing new tokens, reading for attention).
+
+### Block Allocation Math
+
+```
+prompt_tokens = len(req.token_ids)
+num_initial_blocks = ceil(prompt_tokens / block_size)
+
+Example: prompt = 35 tokens, block_size = 16
+  → ceil(35 / 16) = 3 blocks allocated on entry
+  → block 0: tokens 0-15
+  → block 1: tokens 16-31
+  → block 2: tokens 32-34 (+ 13 empty slots for future decode tokens)
+```
+
+### Test Verification
+
+`test_continuous_batching_with_paged_cache` in test_scheduler.py:
+
+- 3 requests, 8 tokens each, block_size=4 → 2 blocks per request
+- Step 1: 2 requests enter → 4 blocks allocated, 12 free
+- Step 2: complete one, step → freed 2 blocks, new request gets 2 → still 12 free
+- Step 3: complete remaining, step → all freed, 16 free, has_work=False

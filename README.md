@@ -14,7 +14,6 @@ A lightweight LLM inference engine built from scratch in PyTorch, inspired by [v
 
 ## Features (Planned)
 
-- Continuous batching scheduler
 - Paged KV cache (block-level memory management)
 - Request queue + priority scheduling
 - FastAPI serving layer with token streaming
@@ -71,7 +70,7 @@ src/llm_engine/
 ├── model/GPT2/           # Custom transformer (attention, block, feedforward)
 ├── inference/            # Generator, sampler, inference engine
 ├── cache/                # KV cache, memory allocator, block table, paged kv cache implementation 
-├── scheduler/            # Batch scheduler, continuous batching scheduler
+├── scheduler/            # Batch scheduler, continuous batching scheduler with paged kv cache and block table integration
 ├── tokenizer/            # HuggingFace tokenizer wrapper
 ├── utils/                # Profiler, GPU monitor, weight loader
 ```
