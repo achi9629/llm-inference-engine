@@ -1,4 +1,4 @@
-import torch, pytest # type: ignore
+import torch, pytest
 from llm_engine import ContinuousKVCache
 
 batch_size = 2

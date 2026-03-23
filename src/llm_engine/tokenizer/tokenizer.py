@@ -1,7 +1,7 @@
-import torch # type: ignore
+import torch
 from pathlib import Path
 from typing import overload, Literal
-from transformers import GPT2TokenizerFast # type: ignore
+from transformers import GPT2TokenizerFast
 
 class Tokenizer:
     def __init__(self, 

@@ -15,9 +15,9 @@ Also tracks per-sequence token counts (seq_lens) and exposes a seq_len property
 for position embedding offset in transformer.py.
 '''
 
-import torch # type: ignore
+import torch
 from typing import List, Tuple
-from torch.nn.utils.rnn import pad_sequence # type: ignore
+from torch.nn.utils.rnn import pad_sequence
 
 from .block_table import BlockTable
 from .paged_kv_cache import PagedKVCache
@@ -156,4 +156,20 @@ class PagedCacheContext:
 
         return max(self.seq_lens)
             
+    def reset_blocks(self) -> None:
+        
+        '''
+        Description:
+            Resets all blocks used by the current batch's sequences, clearing their
+            contents and making them available for reuse. Should be called at the end
+            of each forward pass to prevent stale data from being read in the next pass.
+        Args:
+            None
+        Returns:
+            None
+        '''
+        
+        for seq_id in self.seq_ids:
+            block_id = self.block_table.get_block_ids(seq_id = seq_id)
+            self.paged_kv_cache.reset_blocks(block_ids = block_id)
         

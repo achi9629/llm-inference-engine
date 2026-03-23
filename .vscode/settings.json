@@ -1,7 +1,7 @@
 {
-    "cSpell.words": [
-        "pytest",
-        "pythonpath",
-        "testpaths"
-    ]
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none",
+        "reportMissingTypeStubs": "none",
+        "reportMissingImports": "none",
+    }
 }

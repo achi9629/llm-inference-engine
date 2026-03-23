@@ -1,4 +1,4 @@
-import torch, logging # type: ignore
+import torch, logging
 
 from llm_engine import load_model, load_asset_paths, Tokenizer, InferenceEngine
 from llm_engine import Request, RequestState, ContinuousBatchingScheduler

@@ -11,7 +11,7 @@ Cache shape per layer: (num_blocks, n_heads, block_size, head_dim)
     - block_size: number of token positions per block
 '''
 
-import torch # type: ignore
+import torch
 from typing import List, Tuple
 
 class PagedKVCache:

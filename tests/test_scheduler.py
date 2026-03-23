@@ -1,4 +1,4 @@
-import torch # type: ignore
+import torch
 
 from llm_engine import Request, Tokenizer, BatchScheduler as Scheduler, load_asset_paths
 from llm_engine import ContinuousBatchingScheduler, MemoryAllocator, BlockTable, PagedKVCache

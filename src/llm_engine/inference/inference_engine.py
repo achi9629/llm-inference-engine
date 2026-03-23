@@ -1,8 +1,28 @@
-import torch # type: ignore
-import torch.nn as nn # type: ignore
+
+'''
+Inference Engine
+
+Orchestrator for text generation: tokenize → generate → detokenize.
+Supports three cache modes:
+    - No cache (is_kv_cache_enabled=False): full sequence recomputed each step
+    - Standard KV cache (cache_type="standard"): pre-allocated contiguous tensors per layer
+    - Paged KV cache (cache_type="paged"): block-level memory management via
+      MemoryAllocator + BlockTable + PagedKVCache, wrapped in PagedCacheContext adapter
+
+For paged mode, generate() manages the full block lifecycle per call:
+    create sequences → allocate blocks → build PagedCacheContext → run generator →
+    reset_blocks → free_sequence
+'''
+
+import torch, time, secrets, math
+import torch.nn as nn
 
 from .generator import generator
-from llm_engine.cache.kv_cache import KVCache
+from ..cache.kv_cache import KVCache
+from ..cache.block_table import BlockTable
+from ..cache.paged_kv_cache import PagedKVCache
+from ..cache.memory_allocator import MemoryAllocator
+from ..cache.paged_cache_context import PagedCacheContext
 
 class InferenceEngine:
     def __init__(self, 
@@ -15,14 +35,23 @@ class InferenceEngine:
                  max_tokens_for_kv_cache: int = 2048,
                  batch_size: int = 1,
                  model_cfg: dict = None,
+                 cache_type: str = "standard",
+                 num_blocks: int = None,
+                 block_size: int = None,
         ) -> None:
         
         '''
         Description:
             Initialize the inference engine with model, tokenizer, and optional KV cache.
-            
-            When is_kv_cache_enabled=True, a KVCache is pre-allocated using model_cfg
-            dimensions. The cache is reset at the start of each generate() call.
+
+            Cache modes:
+            - is_kv_cache_enabled=False: no caching, self.kv_cache = None.
+            - cache_type="standard": pre-allocates a single KVCache object using model_cfg
+            dimensions. Reset at the start of each generate() call.
+            - cache_type="paged": creates three persistent components:
+            MemoryAllocator (block pool), BlockTable (logical→physical mapping),
+            PagedKVCache (GPU tensor storage). The PagedCacheContext adapter is
+            built fresh in each generate() call with per-request sequence metadata.
 
         Args:
             model (nn.Module): The transformer model for text generation.
@@ -34,7 +63,12 @@ class InferenceEngine:
             max_tokens_for_kv_cache (int): Maximum sequence length the cache can hold.
             batch_size (int): Batch size for KV cache allocation. Default: 1.
             model_cfg (dict): Model config dict (required when is_kv_cache_enabled=True).
-                Must contain: n_layer, n_head, n_embd.
+                Must contain: n_layer, n_heads, n_embd.
+            cache_type (str): 'standard' for contiguous KVCache, 'paged' for block-level paged cache.
+            num_blocks (int): Total number of blocks in the paged cache pool (required when cache_type='paged').
+            block_size (int): Number of token slots per block (required when cache_type='paged').
+        Returns:
+            None
         '''
         
         # Initialize the inference engine with the provided 
@@ -51,6 +85,10 @@ class InferenceEngine:
         self.tokenizer = tokenizer
         self.eos_token_id = eos_token_id
         self.sampling_method = sampling_method
+        self.is_kv_cache_enabled = is_kv_cache_enabled
+        self.cache_type = cache_type
+        self.num_blocks = num_blocks
+        self.block_size = block_size
         
         # Validate model
         if not isinstance(self.model, nn.Module):
@@ -70,19 +108,41 @@ class InferenceEngine:
             raise TypeError("Tokenizer must provide a callable 'decode' method.")
         
         # Initialize KV cache if enabled; requires model_cfg for layer/head dimensions.
-        # Cache is pre-allocated on the model's device with matching dtype.
-        if is_kv_cache_enabled:
+        if self.is_kv_cache_enabled:
             
             if model_cfg is None:
-                raise ValueError("model_cfg is required when is_kv_cache_enabled=True")            
-            self.kv_cache = KVCache(batch_size = batch_size,
-                                    n_layers = model_cfg["n_layer"],
-                                    n_heads = model_cfg["n_heads"],
-                                    head_dim = model_cfg["n_embd"] // model_cfg["n_heads"],
-                                    max_seq_len = max_tokens_for_kv_cache,
-                                    dtype = next(self.model.parameters()).dtype,
-                                    device = self.device
-                )
+                raise ValueError("model_cfg is required when is_kv_cache_enabled=True")
+
+            # Cache is pre-allocated on the model's device with matching dtype.
+            if self.cache_type == "standard":       
+                self.kv_cache = KVCache(batch_size = batch_size,
+                                        n_layers = model_cfg["n_layer"],
+                                        n_heads = model_cfg["n_heads"],
+                                        head_dim = model_cfg["n_embd"] // model_cfg["n_heads"],
+                                        max_seq_len = max_tokens_for_kv_cache,
+                                        dtype = next(self.model.parameters()).dtype,
+                                        device = self.device
+                    )
+                
+            # For paged cache, we initialize the MemoryAllocator and BlockTable to manage the block pool,
+            # and the PagedKVCache to store the actual key/value tensors. The PagedCacheContext adapter will 
+            # be created/reset in generate() with the appropriate sequence IDs and lengths for each generation
+            elif cache_type == "paged":
+                self.allocator = MemoryAllocator(num_blocks = num_blocks)
+                self.block_table = BlockTable(allocator = self.allocator,
+                                              block_size = self.block_size
+                                    )
+                self.paged_kv_cache = PagedKVCache(num_blocks = num_blocks,
+                                              n_layers = model_cfg["n_layer"],
+                                              n_heads = model_cfg["n_heads"],
+                                              block_size = self.block_size,
+                                              head_dim = model_cfg["n_embd"] // model_cfg["n_heads"],
+                                              dtype = next(self.model.parameters()).dtype,
+                                              device = self.device
+                                    )
+                self.kv_cache = None # The PagedCacheContext will be created/reset in generate() with the appropriate sequence IDs and lengths.
+            else:
+                raise ValueError(f"Unsupported cache_type '{cache_type}'. Supported types: 'standard', 'paged'.")
         else:
             self.kv_cache = None
         
@@ -91,7 +151,8 @@ class InferenceEngine:
         ) -> torch.Tensor:
         
         '''
-        Encode the input text into token IDs using the tokenizer.
+        Description:
+            Encode the input text into token IDs using the tokenizer.
         Args:
             input_text (str | list[str]): The input text to be encoded.
         Returns:
@@ -107,7 +168,8 @@ class InferenceEngine:
         ) -> str | list[str]:
         
         '''
-        Decode token IDs into text as str (single sequence) or list[str] (batch).
+        Description:
+            Decode token IDs into text as str (single sequence) or list[str] (batch).
         Args:
             token_ids (torch.Tensor): The token IDs to be decoded.
         Returns:
@@ -124,20 +186,24 @@ class InferenceEngine:
         '''
         Description:
             Generate text from one or more prompts using the configured model and decoding settings.
-            Resets the KV cache (if enabled) before each generation call.
+
+            Cache behavior per call:
+            - standard: resets the pre-allocated KVCache (zeros all tensors).
+            - paged: creates unique sequence IDs, registers them in the block table,
+            allocates initial blocks (ceil(prompt_tokens / block_size)), builds a
+            fresh PagedCacheContext adapter, and passes it as kv_cache to the generator.
+            After generation completes: reset_blocks (zero GPU tensors) then
+            free_sequence (return blocks to allocator's free list).
 
         Args:
             input_text (str | list[str]): The input prompt(s) for text generation.
             max_tokens (int): Maximum number of new tokens to generate. Default: 50.
 
         Returns:
-            dict[str, object] | list[dict[str, object]]: 
+            dict[str, object] | list[dict[str, object]]:
             A response dictionary for single input, or a list of response dictionaries for batch input.
             Each response includes input_text, generated_text, sampling_method, token_count, and stop_reason.
         '''
-                
-        if self.kv_cache is not None:
-            self.kv_cache.reset_cache()
         
         if input_text == "":
             raise ValueError("Input prompt cannot be empty.")
@@ -149,6 +215,30 @@ class InferenceEngine:
             raise ValueError("All items in the input prompt list must be strings.")
         
         token_ids, padding_mask = self.encode(input_text)
+        
+        if self.is_kv_cache_enabled:
+            if self.cache_type == "standard":
+                self.kv_cache.reset_cache()
+                
+            elif self.cache_type == "paged":
+                seq_ids = [f"{int(time.time()*1000)}-{secrets.token_hex(4)}" for i in range(len(token_ids))] # Generate unique sequence IDs for each input in the batch.
+                seq_lens = [0] * len(token_ids)
+                for idx in range(len(seq_ids)):
+                    self.block_table.add_sequence(seq_id = seq_ids[idx])
+                    num_blocks = math.ceil(len(token_ids[idx]) / self.block_size)
+                    self.block_table.allocate_blocks(seq_id = seq_ids[idx],
+                                                        num_blocks = num_blocks)
+                
+                self.kv_cache = PagedCacheContext(paged_kv_cache = self.paged_kv_cache,
+                                                  block_table = self.block_table,
+                                                  seq_ids = seq_ids,
+                                                  seq_lens = seq_lens,
+                                                  block_size = self.block_size
+                                    )
+            else:
+                raise ValueError(f"Unsupported cache_type '{self.cache_type}' during cache reset. Supported types: 'standard', 'paged'.")
+        
+        
         predicted_token_ids, token_count, stop_reason = generator(
                                                                     model = self.model,
                                                                     token_ids = token_ids,
@@ -160,6 +250,14 @@ class InferenceEngine:
                                                                     kv_cache = self.kv_cache
                                                                 )
         
+        if self.is_kv_cache_enabled and self.cache_type == "paged":
+            
+            self.kv_cache.reset_blocks() # Reset the PagedCacheContext's block tracking after freeing blocks in the block table.
+            
+            # Clean up allocated blocks for the current generation after generation is complete.
+            for seq_id in seq_ids:
+                self.block_table.free_sequence(seq_id = seq_id)
+            
         decoded_text = self.decode(predicted_token_ids)
         # TODO: Normalize single-input decode output.
         # If input_text is a single string but decoded_text is ['...'] (one-item list),

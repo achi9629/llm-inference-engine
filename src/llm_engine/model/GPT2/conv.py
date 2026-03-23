@@ -1,6 +1,6 @@
-import torch # type: ignore
-import torch.nn as nn # type: ignore
-from torch.nn.parameter import Parameter # type: ignore
+import torch
+import torch.nn as nn
+from torch.nn.parameter import Parameter
 
 # Convolutional layer as used in the GPT model, 
 # implemented as a linear layer with a bias.

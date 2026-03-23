@@ -1,4 +1,4 @@
-import pytest # type: ignore
+import pytest
 from llm_engine.tokenizer.tokenizer import Tokenizer
 from llm_engine.config.config_loader import load_asset_paths
 

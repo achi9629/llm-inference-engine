@@ -5,7 +5,7 @@ Usage:
     PYTHONPATH=. python examples/simple_generation.py
 """
 
-import torch # type: ignore
+import torch
 
 from llm_engine import Tokenizer, InferenceEngine, load_asset_paths, load_model
 

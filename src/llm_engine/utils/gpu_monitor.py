@@ -1,5 +1,5 @@
-import torch, pynvml # type: ignore
-from torch.cuda import memory_allocated, memory_reserved, get_device_properties # type: ignore
+import torch, pynvml
+from torch.cuda import memory_allocated, memory_reserved, get_device_properties
 
 import logging
 logger = logging.getLogger(__name__)

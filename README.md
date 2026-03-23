@@ -11,10 +11,10 @@ A lightweight LLM inference engine built from scratch in PyTorch, inspired by [v
 - Pretrained weight loading from OpenAI GPT-2 checkpoints
 - **Batch Inference** — static batching with left padding, attention masks, per-sequence EOS tracking (up to 118x throughput gain)
 - **Continuous batching scheduler** — iteration-level scheduling with per-sequence KV cache tracking, dynamic slot eviction and refill (step-based scheduler)
+- **Paged KV cache** — block-level memory management with memory allocator, block table, and PagedCacheContext adapter (eliminates internal fragmentation)
 
 ## Features (Planned)
 
-- Paged KV cache (block-level memory management)
 - Request queue + priority scheduling
 - FastAPI serving layer with token streaming
 

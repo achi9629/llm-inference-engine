@@ -1,7 +1,7 @@
-import torch # type: ignore
-import torch.nn as nn # type: ignore
+import torch
+import torch.nn as nn
 from typing import Callable
-from transformers.activations import gelu_new, gelu # type: ignore
+from transformers.activations import gelu_new, gelu
 
 from .conv import Conv1D
 

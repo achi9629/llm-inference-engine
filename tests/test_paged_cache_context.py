@@ -1,5 +1,4 @@
-import torch, pytest, logging # type: ignore
-from torch.nn.utils.rnn import pad_sequence # type: ignore
+import torch, pytest, logging
 
 from llm_engine import PagedKVCache, BlockTable, MemoryAllocator, PagedCacheContext
 

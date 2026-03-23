@@ -1,4 +1,4 @@
-import pytest, logging # type: ignore
+import pytest, logging
 from collections import deque
 
 from llm_engine import MemoryAllocator

@@ -1,5 +1,5 @@
-import torch # type: ignore
-import torch.nn as nn # type: ignore
+import torch
+import torch.nn as nn
 
 from .attention import MultiHeadAttention
 from .feedforward import FeedForwardNetwork

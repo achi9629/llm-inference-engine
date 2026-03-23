@@ -128,8 +128,8 @@
 - ✅ Forward pass integration (PagedCacheContext adapter)
 - ✅ Implement `src/llm_engine/cache/paged_cache_context.py`
 - ✅ Write `tests/test_paged_cache_context.py`
-- ⬜ Integrate PagedCacheContext with generator.py (pass adapter as kv_cache argument)
-- ⬜ Integrate PagedCacheContext with inference_engine.py (create adapter from paged cache + block table)
+- ✅ Integrate PagedCacheContext with generator.py (pass adapter as kv_cache argument)
+- ✅ Integrate PagedCacheContext with inference_engine.py (create adapter from paged cache + block table)
 - ⬜ Measure GPU memory usage under concurrent requests
 
 ### Day 17 - Serving Layer (Mar 25)

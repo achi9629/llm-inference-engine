@@ -1,5 +1,5 @@
-import torch # type: ignore
-import torch.profiler # type: ignore
+import torch
+import torch.profiler
 
 class InferenceProfiler:
     def __init__(self,

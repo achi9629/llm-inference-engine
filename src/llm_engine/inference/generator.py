@@ -1,4 +1,4 @@
-import torch # type: ignore
+import torch
 from typing import Tuple
 
 from .sampler import greedy_sampler

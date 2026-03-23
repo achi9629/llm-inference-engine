@@ -467,7 +467,8 @@ This requires tracking per-sequence token count, which the adapter already has v
 | File | Change | Reason |
 |---|---|---|
 | **New: adapter/wrapper class** | Bundles paged_kv_cache + block_table + batch metadata. Exposes `update_cache()` that internally calls write + read + stack. Also needs `seq_len` property for position embedding offset in transformer.py. | Isolates all paged logic behind the same interface |
-| **generator.py** | Create adapter wrapper each step with current batch's sequence metadata. Pass it as the `kv_cache` argument. | Generator knows which sequences are in the batch |
+| **generator.py** | **No changes** | Duck typing — checks `kv_cache is not None`, passes it to model |
+| **inference_engine.py** | Creates sequences in block_table, allocates initial blocks, builds PagedCacheContext, passes as kv_cache to generator. After generation: reset_blocks + free_sequence. | Orchestrates the full paged cache lifecycle per generate() call |
 | **attention.py** | **No changes** | Duck typing — calls `kv_cache.update_cache(layer_idx, k, v)` as before |
 | **block.py** | **No changes** | Just pipes `kv_cache` through |
 | **transformer.py** | **No changes** | Just pipes `kv_cache` through, reads `kv_cache.seq_len` for position offset |

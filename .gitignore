@@ -1,5 +1,6 @@
 __pycache__/
 .vscode/
+.vscode/settings.json
 *.pyc
 .pytest_cache/
 profiler_trace.json

@@ -1,4 +1,4 @@
-import logging, torch # type: ignore
+import logging, torch
 logger = logging.getLogger(__name__)
 
 from llm_engine import Tokenizer, InferenceEngine

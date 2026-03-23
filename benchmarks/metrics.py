@@ -1,4 +1,4 @@
-import torch, time # type: ignore
+import torch, time
 import logging
 logger = logging.getLogger(__name__)
 

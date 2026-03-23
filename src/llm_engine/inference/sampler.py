@@ -1,4 +1,4 @@
-import torch # type: ignore
+import torch
 
 def greedy_sampler(logits : torch.Tensor) -> torch.Tensor:
     

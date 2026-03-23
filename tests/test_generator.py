@@ -1,4 +1,4 @@
-import torch, pytest # type: ignore
+import torch, pytest
 
 from llm_engine import load_asset_paths, load_model, generator, KVCache
 
