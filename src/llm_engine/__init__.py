@@ -15,6 +15,8 @@ from .model.GPT2.attention import MultiHeadAttention
 from .scheduler.request import Request, RequestState
 from .scheduler.batch_scheduler import BatchScheduler
 from .scheduler.continuous_batching import ContinuousBatchingScheduler
+from .serving.request_handler import RequestHandler
+
 __all__ = [
             "Tokenizer",
             "InferenceEngine",
@@ -35,5 +37,6 @@ __all__ = [
             "RequestState",
             "BatchScheduler",
             "ContinuousBatchingScheduler",
+            "RequestHandler",
             
 ]   
