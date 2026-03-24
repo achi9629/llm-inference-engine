@@ -10,10 +10,14 @@ def run_throughput_benchmark(is_kv_cache_enabled: bool = False) -> None:
     
     '''
     Description:
-    This benchmark evaluates the throughput of a language model by measuring the time taken to generate a
-    specified number of tokens given a fixed prompt. For different max token lengths, it records the latency,
-    throughput, and GPU metrics such as memory usage and utilization. The benchmark can be run with or 
-    without KV caching to compare the performance impact of caching on generation speed and resource usage.
+        This benchmark evaluates the throughput of a language model by measuring the time taken to generate a
+        specified number of tokens given a fixed prompt. For different max token lengths, it records the latency,
+        throughput, and GPU metrics such as memory usage and utilization. The benchmark can be run with or 
+        without KV caching to compare the performance impact of caching on generation speed and resource usage.
+    Args:
+        is_kv_cache_enabled (bool): Whether to enable KV caching during generation. Defaults to False.
+    Returns:
+        None: The function prints the results to the console and does not return any value.
     '''
     
     config, model_cfg = load_asset_paths()

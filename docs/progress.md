@@ -130,7 +130,7 @@
 - ✅ Write `tests/test_paged_cache_context.py`
 - ✅ Integrate PagedCacheContext with generator.py (pass adapter as kv_cache argument)
 - ✅ Integrate PagedCacheContext with inference_engine.py (create adapter from paged cache + block table)
-- ⬜ Measure GPU memory usage under concurrent requests
+- ✅ Measure GPU memory usage under concurrent requests
 
 ### Day 17 - Serving Layer (Mar 25)
 
@@ -189,7 +189,7 @@
 | + KV Cache | 9 | same prompts, show speedup | [kv_cache.md](benchmark/kv_cache_benchmark.md) |
 | + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](benchmark/batched_kv_cache_benchmark.md) |
 | + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | [continuous_batching.md](benchmark/continuous_batching_benchmark.md) |
-| + Paged KV Cache | 16 | memory usage under concurrent requests | link |
+| + Paged KV Cache | 16 | memory usage under concurrent requests | [paged_kv_cache.md](benchmark/paged_kv_cache_benchmark.md) |
 | Full Load Test | 18 | 8-32 users, p95 latency, tokens/sec, GPU memory | link |
 
 ---

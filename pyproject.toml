@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-inference-engine"
 version = "0.1.0"
-description = "LLM inference engine with KV cache, batching, and serving"
+description = "LLM inference engine with KV cache, batching, continuous batching, paged KV cache, and serving"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

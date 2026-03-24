@@ -1,5 +1,34 @@
 # Day 15: Paged KV Cache — Memory Allocator
 
+# Paged KV Cache
+
+## What Is It?
+
+A **paged KV cache** stores key-value tensors in fixed-size blocks rather than contiguous pre-allocated tensors. Inspired by OS virtual memory paging, it maps logical token positions to physical blocks via a block table, allowing:
+
+- **On-demand allocation** — blocks are allocated as tokens are generated, not upfront for the maximum sequence length
+- **Elimination of internal fragmentation** — waste is bounded to at most `block_size - 1` slots per sequence
+- **Shared block pool** — all sequences draw from the same pool, enabling flexible memory sharing
+
+### How It Differs from Standard KV Cache
+
+| | Standard KV Cache | Paged KV Cache |
+|---|---|---|
+| Memory layout | Contiguous `[batch, heads, max_seq_len, d_head]` | Non-contiguous blocks `[num_blocks, block_size, heads, d_head]` |
+| Allocation | Pre-allocates for `max_seq_len` (e.g., 1024 tokens) | Allocates blocks on demand (~4 blocks for 50 tokens at block_size=16) |
+| Waste per sequence | `max_seq_len - actual_len` slots | At most `block_size - 1` slots |
+| Token access | Direct indexing: `cache[batch, head, pos, :]` | Two-level: block table lookup → `pool[block_id, offset, head, :]` |
+
+### How It Differs from PagedAttention
+
+**Paged KV Cache** is the memory management layer (what this project implements).
+
+**PagedAttention** is the complete system: paged KV cache + a fused CUDA kernel that computes attention directly on non-contiguous blocks without gathering them into contiguous tensors first. The fused kernel eliminates the Python-level overhead of block lookups and scatter/gather operations.
+
+This project implements the paged KV cache to understand the memory management principles. The throughput overhead (~2x slower than standard) is expected without fused kernels — production systems (vLLM) close this gap with custom CUDA kernels (`paged_attention_v1/v2`).
+
+---
+
 ## The Problem with Contiguous Allocation
 
 Both `KVCache` and `ContinuousKVCache` pre-allocate `max_seq_len` positions per batch slot at initialization:
