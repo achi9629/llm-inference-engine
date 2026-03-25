@@ -136,7 +136,8 @@
 
 - ✅ Implement `src/llm_engine/serving/request_handler.py` (parse HTTP request -> create Request object)
 - ✅ Write `tests/test_request_handler.py`
-- ⬜ Implement `src/llm_engine/serving/router.py` (route to scheduler, return streaming response)
+- ✅ Implement `src/llm_engine/serving/router.py` (route to scheduler, return streaming response)
+- ✅ Write `tests/test_router.py`
 - ⬜ Implement `src/llm_engine/serving/api_server.py` (FastAPI server with `/generate` endpoint)
 - ⬜ Implement `src/llm_engine/serving/client.py` (Python client for testing)
 - ⬜ Test end-to-end: client -> server -> generation -> streaming response

@@ -187,3 +187,7 @@ PYTHONPATH=. python examples/simple_generation.py
 | Peak TFLOPS (fp32) | 19.5                  |
 | PyTorch            | 2.4.0+cu121           |
 | Python             | 3.10.18               |
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
