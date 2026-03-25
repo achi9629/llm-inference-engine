@@ -1,17 +1,14 @@
-import pytest, uuid, logging
+import pytest, uuid
 from unittest.mock import MagicMock
 
 from llm_engine import InferenceEngine, ContinuousBatchingScheduler, \
                        Router, RequestHandler, Tokenizer
-from llm_engine import load_asset_paths, load_model
-                       
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+from llm_engine import load_asset_paths
     
 @pytest.fixture
 def router():
     
-    config, model_cfg = load_asset_paths()
+    config, _ = load_asset_paths()
     tokenizer = Tokenizer(config = config)
     
     request_handler = RequestHandler(tokenizer = tokenizer, max_model_len = 1024)

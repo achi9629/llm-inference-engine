@@ -138,7 +138,8 @@
 - ✅ Write `tests/test_request_handler.py`
 - ✅ Implement `src/llm_engine/serving/router.py` (route to scheduler, return streaming response)
 - ✅ Write `tests/test_router.py`
-- ⬜ Implement `src/llm_engine/serving/api_server.py` (FastAPI server with `/generate` endpoint)
+- ✅ Implement `src/llm_engine/serving/api_server.py` (FastAPI server with `/generate` endpoint)
+- ✅ Write `tests/test_api_server.py`
 - ⬜ Implement `src/llm_engine/serving/client.py` (Python client for testing)
 - ⬜ Test end-to-end: client -> server -> generation -> streaming response
 
@@ -178,6 +179,7 @@
 - ⬜ Write `docs/scheduling.md` (continuous batching + scheduling explanation)
 - ⬜ Update `README.md` (overview, architecture, features, benchmarks, how to run, future work)
 - ⬜ Implement `scripts/run_server.py` (one-command server startup)
+- ⬜ Add GitHub Actions CI workflow (mark GPU tests `@pytest.mark.gpu`, run non-GPU tests in CI)
 - ⬜ Include benchmark results and performance charts in docs
 - ⬜ Final GitHub-ready cleanup
 
