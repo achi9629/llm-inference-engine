@@ -75,7 +75,6 @@
 ### Day 10 - Batch Inference Basics (Mar 18)
 
 - ✅ Extend `src/llm_engine/inference/generator.py` for batched inputs
-- ✅ Implement `src/llm_engine/utils/tensor_utils.py` (padding, batching helpers)
 - ✅ Handle different prompt lengths within a batch (padding/attention masks)
 
 ### Day 11 - Batch Inference Evaluation (Mar 19)
@@ -87,7 +86,7 @@
 ### Day 12 - Request Queue + Scheduler (Mar 20)
 
 - ✅ Implement `src/llm_engine/scheduler/request.py` (request dataclass: prompt, token_ids, state, timestamps)
-- ✅ Implement `src/llm_engine/scheduler/request_queue.py` (priority queue for pending requests)
+- ✅ Implement `src/llm_engine/scheduler/request_queue.py` (FIFO queue for pending requests)
 - ✅ Implement `src/llm_engine/scheduler/batch_scheduler.py` (group requests into batches respecting memory budget)
 - ✅ Simulate asynchronous requests arriving over time
 
@@ -140,46 +139,48 @@
 - ✅ Write `tests/test_router.py`
 - ✅ Implement `src/llm_engine/serving/api_server.py` (FastAPI server with `/generate` endpoint)
 - ✅ Write `tests/test_api_server.py`
-- ⬜ Implement `src/llm_engine/serving/client.py` (Python client for testing)
-- ⬜ Test end-to-end: client -> server -> generation -> streaming response
+- ✅ Implement `src/llm_engine/serving/client.py` (Python client for testing)
+- ✅ Implement `examples/server_example.py` (client usage example)
+- ✅ Implement `scripts/run_server.py` (one-command server startup)
+- ✅ Test end-to-end: client -> server -> generation -> streaming response
 
 ### Day 18 - Load Testing (Mar 26)
+
+- ⬜ Make Router handle concurrent requests (async or thread-based batching)
+- ⬜ Paged vs Standard KV cache under load (increase concurrent sequences until OOM)
+- ⬜ Single-user baseline latency (warm-up vs cold-start)
+- ⬜ Document results + plots
+
+### Day 19 - Full Benchmark Suite + Utils (Mar 27)
 
 - ⬜ Implement `benchmarks/load/load_test.py` (simulate 8-32 concurrent users)
 - ⬜ Implement `benchmarks/throughput/throughput_test.py`
 - ⬜ Implement `benchmarks/latency/latency_test.py`
+- ⬜ Concurrent load test (4, 8, 16, 32 users) — throughput + latency distribution
+- ⬜ Queue depth / backpressure test (100 requests, max_batch=4)
+- ⬜ Request arrival patterns (burst vs steady vs Poisson)
 - ⬜ Test with short, medium, and long prompts
+- ⬜ Measure p50, p90, p95, p99 latency under load
 - ⬜ Measure tokens/sec throughput under load
-- ⬜ Measure p95 latency under load
 - ⬜ Record GPU utilization and memory consumption
-
-### Day 19 - Full Benchmark Suite + Utils (Mar 27)
-
-- ⬜ Implement `scripts/run_benchmark.py` (run all benchmarks end-to-end)
-- ⬜ Implement `src/llm_engine/utils/logging.py` (structured logging)
-- ⬜ Implement `src/llm_engine/utils/memory_utils.py` (memory tracking helpers)
-- ⬜ Collect final benchmark numbers across all configurations
-- ⬜ Write `tests/test_inference.py`
+- ⬜ Document results + plots
 
 ### Day 20 - Refinement (Mar 28)
 
+- ⬜ Implement `scripts/run_benchmark.py` (run all benchmarks end-to-end)
+- ⬜ Collect final benchmark numbers across all configurations
+- ⬜ Write `tests/test_inference.py`
+- ⬜ Fix edge cases and bugs
 - ⬜ Optimize batching logic
 - ⬜ Improve scheduler decisions
-- ⬜ Fix edge cases and bugs
-- ⬜ Implement remaining `src/llm_engine/model/rotary_embedding.py` (if needed)
-- ⬜ Refine feedforward implementation `src/llm_engine/model/feedforward.py` (if needed)
-- ⬜ Refine transformer stack integration `src/llm_engine/model/transformer.py` (if needed)
 - ⬜ Code cleanup and consistency pass
 
 ### Day 21 - Documentation + Portfolio (Mar 29)
 
-- ⬜ Write `docs/architecture.md` (system architecture + diagrams)
-- ⬜ Write `docs/design_decisions.md` (key design choices and tradeoffs)
-- ⬜ Write `docs/kv_cache.md` (KV cache mechanism explanation)
-- ⬜ Write `docs/scheduling.md` (continuous batching + scheduling explanation)
+- ⬜ Write `docs/concepts/architecture.md` (system architecture + diagrams)
+- ⬜ Write `docs/concepts/design_decisions.md` (key design choices and tradeoffs)
+- ⬜ Write `docs/concepts/kv_cache.md` (KV cache mechanism explanation)
 - ⬜ Update `README.md` (overview, architecture, features, benchmarks, how to run, future work)
-- ⬜ Implement `scripts/run_server.py` (one-command server startup)
-- ⬜ Add GitHub Actions CI workflow (mark GPU tests `@pytest.mark.gpu`, run non-GPU tests in CI)
 - ⬜ Include benchmark results and performance charts in docs
 - ⬜ Final GitHub-ready cleanup
 
@@ -206,3 +207,15 @@
 - ⬜ Benchmark suite with performance progression
 - ⬜ Complete documentation with architecture diagrams
 - ⬜ Clean, well-structured codebase on GitHub
+
+## Future Extensions (Post-Project)
+
+- ⬜ Priority scheduling (swap FIFO deque for heapq in RequestQueue)
+- ⬜ Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
+- ⬜ Add LLaMA 7B/8B support (RoPE, GQA, RMSNorm, SwiGLU)
+- ⬜ Add Mistral model support
+- ⬜ Prefix caching (reuse KV blocks across requests sharing system prompt)
+- ⬜ Roofline analysis doc (compute vs memory-bandwidth bound at each optimization stage)
+- ⬜ Benchmark against vLLM on matched workloads
+- ⬜ GitHub Actions CI workflow (mark GPU tests `@pytest.mark.gpu`, run non-GPU tests in CI)
+- ⬜ Guided decoding / structured output (JSON schema-constrained sampling via logit masking)

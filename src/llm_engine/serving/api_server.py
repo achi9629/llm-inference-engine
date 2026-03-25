@@ -15,8 +15,8 @@ from .router import Router
 class GenerateRequest(BaseModel):
     
     """
-    Pydantic model for the /generate endpoint request body.
-    
+    Description:
+        Pydantic model for the /generate endpoint request body.
     Attributes:
         prompt (str): The input text to generate from.
         max_tokens (int): Maximum number of tokens to generate.
@@ -28,8 +28,8 @@ class GenerateRequest(BaseModel):
 def create_app(router: Router) -> FastAPI:
     
     """
-    Factory function that creates a FastAPI application with the given Router.
-    
+    Description:
+        Factory function that creates a FastAPI application with the given Router.
     Args:
         router (Router): The router instance that handles generation requests.
     Returns:

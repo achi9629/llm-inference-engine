@@ -18,6 +18,7 @@ from .scheduler.continuous_batching import ContinuousBatchingScheduler
 from .serving.request_handler import RequestHandler
 from .serving.router import Router
 from .serving.api_server import create_app
+from .serving.client import Client
 __all__ = [
             "Tokenizer",
             "InferenceEngine",
@@ -41,5 +42,6 @@ __all__ = [
             "RequestHandler",
             "Router",
             "create_app",
+            "Client",
             
 ]   
