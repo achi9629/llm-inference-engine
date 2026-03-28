@@ -146,7 +146,8 @@
 
 ### Day 18 - Load Testing (Mar 26)
 
-- ⬜ Make Router handle concurrent requests (async or thread-based batching)
+- ✅ Make Router handle concurrent requests (async or thread-based batching)
+- ✅ Add async unit tests in `tests/test_router.py`
 - ⬜ Paged vs Standard KV cache under load (increase concurrent sequences until OOM)
 - ⬜ Single-user baseline latency (warm-up vs cold-start)
 - ⬜ Document results + plots

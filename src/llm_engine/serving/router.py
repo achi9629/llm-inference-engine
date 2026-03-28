@@ -78,6 +78,20 @@ class Router:
         self.loop = asyncio.get_event_loop()
         self._loop_task = self.loop.create_task(self._generation_loop())
         
+    def stop(self) -> None:
+        
+        '''
+        Description:
+            Stop the Router's background generation loop. Cancels the asyncio Task
+            if it is running. Safe to call even if the loop was never started.
+        Returns:
+            None
+        '''
+        
+        if self._loop_task:
+            self._loop_task.cancel()
+            self._loop_task = None
+        
     async def generate(self,
                  prompt: str,
                  max_tokens: int

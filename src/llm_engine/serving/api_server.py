@@ -38,10 +38,14 @@ def create_app(router: Router) -> FastAPI:
 
     app = FastAPI()
     
+    @app.on_event("startup")
+    async def startup_event():
+        router.start()
+    
     @app.post("/generate")
-    def generate(request: GenerateRequest):
+    async def generate(request: GenerateRequest):
         try:
-            response = router.generate(request.prompt, request.max_tokens)
+            response = await router.generate(request.prompt, request.max_tokens)
             return response
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))

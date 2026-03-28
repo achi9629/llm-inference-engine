@@ -98,3 +98,4 @@ def test_health_endpoint(client):
     
     data = response.json()
     assert data["status"] == "ok", f"Expected health status to be 'ok', got {data['status']}"
+    
