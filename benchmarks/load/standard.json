@@ -1,0 +1,222 @@
+{
+  "cache_type": "standard",
+  "num_blocks": 4096,
+  "block_size": 16,
+  "max_tokens": 50,
+  "batch_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024,
+    2048,
+    4096
+  ],
+  "results": [
+    {
+      "latency_sec": 0.32882558554410934,
+      "tokens_per_sec": 152.05629427304066,
+      "peak_memory_mb": 642.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 606.837890625,
+        "memory_reserved_mb": 692.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 80361.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 14217.5625,
+        "gpu_memory_free_mb": 67702.4375,
+        "gpu_utilization_percent": 0,
+        "memory_utilization_percent": 0
+      },
+      "MFU_percent": 0.19407031861055055,
+      "status": "OK",
+      "batch_size": 1
+    },
+    {
+      "latency_sec": 0.34142463095486164,
+      "tokens_per_sec": 292.8904095768667,
+      "peak_memory_mb": 750.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 678.837890625,
+        "memory_reserved_mb": 812.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 80241.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 14337.5625,
+        "gpu_memory_free_mb": 67582.4375,
+        "gpu_utilization_percent": 34,
+        "memory_utilization_percent": 5
+      },
+      "MFU_percent": 0.373817705977299,
+      "status": "OK",
+      "batch_size": 2
+    },
+    {
+      "latency_sec": 0.3457714691758156,
+      "tokens_per_sec": 578.4167226888964,
+      "peak_memory_mb": 966.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 822.837890625,
+        "memory_reserved_mb": 1004.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 80049.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 14529.5625,
+        "gpu_memory_free_mb": 67390.4375,
+        "gpu_utilization_percent": 33,
+        "memory_utilization_percent": 5
+      },
+      "MFU_percent": 0.738236573491236,
+      "status": "OK",
+      "batch_size": 4
+    },
+    {
+      "latency_sec": 0.35974273830652237,
+      "tokens_per_sec": 1111.9056965068633,
+      "peak_memory_mb": 1398.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 1110.837890625,
+        "memory_reserved_mb": 1438.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 79615.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 14963.5625,
+        "gpu_memory_free_mb": 66956.4375,
+        "gpu_utilization_percent": 34,
+        "memory_utilization_percent": 5
+      },
+      "MFU_percent": 1.4191316039735418,
+      "status": "OK",
+      "batch_size": 8
+    },
+    {
+      "latency_sec": 0.3799297343939543,
+      "tokens_per_sec": 2105.652513026183,
+      "peak_memory_mb": 2262.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 1686.837890625,
+        "memory_reserved_mb": 2302.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 78751.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 15827.5625,
+        "gpu_memory_free_mb": 66092.4375,
+        "gpu_utilization_percent": 38,
+        "memory_utilization_percent": 5
+      },
+      "MFU_percent": 2.6874563531866227,
+      "status": "OK",
+      "batch_size": 16
+    },
+    {
+      "latency_sec": 0.45102804340422153,
+      "tokens_per_sec": 3547.4512580718706,
+      "peak_memory_mb": 3990.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 2838.837890625,
+        "memory_reserved_mb": 4034.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 77019.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 17559.5625,
+        "gpu_memory_free_mb": 64360.4375,
+        "gpu_utilization_percent": 35,
+        "memory_utilization_percent": 5
+      },
+      "MFU_percent": 4.527632343013559,
+      "status": "OK",
+      "batch_size": 32
+    },
+    {
+      "latency_sec": 0.7462820932269096,
+      "tokens_per_sec": 4287.922796275682,
+      "peak_memory_mb": 7446.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 5142.837890625,
+        "memory_reserved_mb": 7488.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 73565.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 21013.5625,
+        "gpu_memory_free_mb": 60906.4375,
+        "gpu_utilization_percent": 15,
+        "memory_utilization_percent": 2
+      },
+      "MFU_percent": 5.4727004049986565,
+      "status": "OK",
+      "batch_size": 64
+    },
+    {
+      "latency_sec": 0.6097745560109615,
+      "tokens_per_sec": 10495.682276196763,
+      "peak_memory_mb": 14358.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 9750.837890625,
+        "memory_reserved_mb": 14398.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 66655.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 27923.5625,
+        "gpu_memory_free_mb": 53996.4375,
+        "gpu_utilization_percent": 46,
+        "memory_utilization_percent": 6
+      },
+      "MFU_percent": 13.395699356706956,
+      "status": "OK",
+      "batch_size": 128
+    },
+    {
+      "latency_sec": 0.8802368231117725,
+      "tokens_per_sec": 14541.541167012341,
+      "peak_memory_mb": 28182.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 18966.837890625,
+        "memory_reserved_mb": 28226.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 52827.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 41751.5625,
+        "gpu_memory_free_mb": 40168.4375,
+        "gpu_utilization_percent": 50,
+        "memory_utilization_percent": 7
+      },
+      "MFU_percent": 18.55945221381653,
+      "status": "OK",
+      "batch_size": 256
+    },
+    {
+      "latency_sec": 2.113213526085019,
+      "tokens_per_sec": 12114.25143933612,
+      "peak_memory_mb": 55830.837890625,
+      "gpu_snapshot": {
+        "memory_allocated_mb": 37398.837890625,
+        "memory_reserved_mb": 55870.0,
+        "memory_total_mb": 81053.375,
+        "memory_free_mb": 25183.375,
+        "gpu_memory_total_mb": 81920.0,
+        "gpu_memory_used_mb": 69395.5625,
+        "gpu_memory_free_mb": 12524.4375,
+        "gpu_utilization_percent": 49,
+        "memory_utilization_percent": 8
+      },
+      "MFU_percent": 15.461488442817542,
+      "status": "OK",
+      "batch_size": 512
+    },
+    {
+      "status": "OOM",
+      "batch_size": 1024,
+      "error": "CUDA out of memory. Tried to allocate 3.00 GiB. GPU 1 has a total capacity of 79.15 GiB of which 240.44 MiB is free. Process 713325 has 962.00 MiB memory in use. Process 1381331 has 6.82 GiB memory in use. Process 2941701 has 1.62 GiB memory in use. Process 3954856 has 1.62 GiB memory in use. Process 1548192 has 67.91 GiB memory in use. Of the allocated memory 66.52 GiB is allocated by PyTorch, and 35.16 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+      "num_tokens": null,
+      "latency_sec": null,
+      "tokens_per_sec": null,
+      "peak_memory_mb": null
+    }
+  ]
+}

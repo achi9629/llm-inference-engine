@@ -45,7 +45,7 @@ class MemoryAllocator:
         '''
         
         if num_blocks > len(self.free_blocks):
-            raise MemoryError("Not enough free blocks available, Needed: {}, Available: {}and Allocated: {}".format(num_blocks, len(self.free_blocks), len(self.allocated_blocks)))
+            raise MemoryError("Not enough free blocks available, Needed: {}, Available: {} and Allocated: {}".format(num_blocks, len(self.free_blocks), len(self.allocated_blocks)))
         
         allocated = []
         for _ in range(num_blocks):

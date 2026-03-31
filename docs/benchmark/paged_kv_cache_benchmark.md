@@ -248,7 +248,57 @@
 
 ---
 
-## 6. Summary
+## 6. Load Stress (Day 18): OOM Boundary Test
+
+**Goal:** Compare how far standard vs paged KV cache can scale under concurrent load before failure.
+
+**Method:**
+
+- Run each cache type in a separate process to avoid post-OOM CUDA allocator contamination.
+- Increase batch size geometrically until failure.
+- Stop at first failure and record failure type.
+
+**Config:** `max_tokens=50`, `block_size=16`, `num_blocks=4096`, batch sizes: `[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]`.
+
+### Side-by-Side Results
+
+| Batch Size | Std Mem (MB) | Std Status | Paged Mem (MB) | Paged Status | Ratio (Std/Paged) |
+|------------|--------------|------------|----------------|--------------|-------------------|
+| 1          | 642.8        | OK         | 5145.9         | OK           | 0.1               |
+| 2          | 750.8        | OK         | 5147.9         | OK           | 0.1               |
+| 4          | 966.8        | OK         | 5151.9         | OK           | 0.2               |
+| 8          | 1398.8       | OK         | 5160.7         | OK           | 0.3               |
+| 16         | 2262.8       | OK         | 5176.7         | OK           | 0.4               |
+| 32         | 3990.8       | OK         | 5211.4         | OK           | 0.8               |
+| 64         | 7446.8       | OK         | 5278.4         | OK           | 1.4               |
+| 128        | 14358.8      | OK         | 5414.5         | OK           | 2.7               |
+| 256        | 28182.8      | OK         | 5685.9         | OK           | 5.0               |
+| 512        | 55830.8      | OK         | 6228.9         | OK           | 9.0               |
+| 1024       | N/A          | OOM        | 7312.4         | OK           | N/A               |
+| 2048       | N/A          | -          | N/A            | Not enough free blocks | N/A       |
+| 4096       | N/A          | -          | N/A            | -            | N/A               |
+
+![Load Stress: Memory vs Batch Size](../../assets/plots/load_stress_memory_vs_batch.png)
+
+![Load Stress: Memory Ratio](../../assets/plots/load_stress_memory_ratio.png)
+
+![Load Stress: Side-by-Side Memory Comparison](../../assets/plots/load_stress_bar_chart.png)
+
+**Observations:**
+
+- **Memory crossover occurs between batch 32 and 64.**
+- **Paged memory remains relatively flat** as batch increases (fixed block pool + modest activation growth).
+- **At batch 512, standard uses ~9x more memory** than paged (55.8 GB vs 6.2 GB).
+- **Standard fails first** at batch 1024 with CUDA OOM.
+- **Paged fails later** at batch 2048 due to block-pool exhaustion, not CUDA OOM.
+
+**Conclusion:**
+
+Paged KV cache significantly extends serving capacity under concurrent load. In this setup, paged survives a full additional scaling step beyond standard OOM while using substantially less memory at high batch sizes.
+
+---
+
+## 7. Summary
 
 ### Memory Analysis
 

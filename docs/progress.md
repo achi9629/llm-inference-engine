@@ -148,9 +148,9 @@
 
 - ✅ Make Router handle concurrent requests (async or thread-based batching)
 - ✅ Add async unit tests in `tests/test_router.py`
-- ⬜ Paged vs Standard KV cache under load (increase concurrent sequences until OOM)
+- ✅ Paged vs Standard KV cache under load (increase concurrent sequences until OOM)
 - ⬜ Single-user baseline latency (warm-up vs cold-start)
-- ⬜ Document results + plots
+- ✅ Document results + plots
 
 ### Day 19 - Full Benchmark Suite + Utils (Mar 27)
 

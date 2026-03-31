@@ -104,9 +104,9 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 - **Memory crossover at batch_size ~24-32** — below this, standard's pre-allocated cache is smaller; above it, paged's block pool wins
 - **Paged memory nearly flat** (2,681→3,220 MB) regardless of batch size — only allocates blocks actually used
 - **Throughput tradeoff:** ~2x slower at small batches due to Python-level scatter/gather (no fused CUDA kernel)
+- **OOM boundary:** Standard hits CUDA OOM at batch 1024; paged survives to 1024 (7,312 MB) and hits block exhaustion at 2048 — **9x less memory at batch 512**
 
 > Full benchmark details: [baseline_benchmark.md](docs/benchmark/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/benchmark/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/benchmark/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/benchmark/continuous_batching_benchmark.md)| [paged_kv_cache_benchmark.md](docs/benchmark/paged_kv_cache_benchmark.md)
-
 ## Project Structure
 
 ```bash
