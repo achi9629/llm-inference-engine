@@ -298,7 +298,50 @@ Paged KV cache significantly extends serving capacity under concurrent load. In 
 
 ---
 
-## 7. Summary
+## 7. Single-User Latency (Day 18): Cold Start vs Warm
+
+**Goal:** Measure single-request latency floor for standard vs paged KV cache, including cold-start penalty.
+
+**Config:** `batch_size=1`, `max_tokens=50`, `num_blocks=128`, `block_size=16`. Warm = mean of 17 iterations after 3 warmup discards.
+
+> **Note:** Only the first row (standard, prompt_len=32) is a true cold start — CUDA context initialization, kernel JIT, and cuBLAS handle creation happen once per process. All subsequent "cold" values reflect only engine-creation overhead on an already-warm CUDA runtime.
+
+### Results
+
+| Phase | Cache | Prompt Len | Latency (s) | Tok/s | Peak Mem (MB) |
+|-------|-------|-----------|-------------|-------|---------------|
+| Cold | standard | 32 | 0.504 | 99.2 | 634.7 |
+| Warm | standard | 32 | 0.300+-0.003 | 166.5+-1.5 | 642.8+-0.0 |
+| Cold | paged | 32 | 0.413 | 121.1 | 687.9 |
+| Warm | paged | 32 | 0.411+-0.002 | 121.8+-0.7 | 687.9+-0.0 |
+| Cold | standard | 256 | 0.310 | 161.4 | 663.7 |
+| Warm | standard | 256 | 0.302+-0.002 | 165.4+-1.2 | 663.3+-0.5 |
+| Cold | paged | 256 | 0.626 | 79.8 | 734.3 |
+| Warm | paged | 256 | 0.625+-0.006 | 80.0+-0.7 | 734.3+-0.0 |
+| Cold | standard | 512 | 0.309 | 161.9 | 716.7 |
+| Warm | standard | 512 | 0.307+-0.001 | 163.1+-0.7 | 716.4+-0.5 |
+| Cold | paged | 512 | 0.877 | 57.0 | 790.4 |
+| Warm | paged | 512 | 0.873+-0.003 | 57.3+-0.2 | 790.4+-0.0 |
+
+### Observations
+
+- **True cold-start penalty: ~1.68x** (0.504s vs 0.300s) — only visible on the first `generate()` call in the process due to CUDA context initialization and kernel JIT compilation
+- **Paged latency overhead scales with prompt length:**
+
+| Prompt Len | Standard Warm | Paged Warm | Slowdown |
+|-----------|--------------|-----------|----------|
+| 32 | 0.300s | 0.411s | 1.37x |
+| 256 | 0.302s | 0.625s | 2.07x |
+| 512 | 0.307s | 0.873s | 2.84x |
+
+- **Standard latency is nearly flat** (~0.30s) across prompt lengths — KV cache makes decode cost O(1) per step
+- **Paged overhead compounds with sequence length** — Python-level scatter/gather in `update_cache()` grows linearly with context size
+- **Variance is extremely tight** — std of 0.001-0.006s confirms stable steady-state
+- **Memory difference is minimal at batch_size=1** (~50-75 MB more for paged) — the paged advantage only manifests at higher batch sizes
+
+---
+
+## 8. Summary
 
 ### Memory Analysis
 
@@ -325,6 +368,7 @@ Paged KV cache significantly extends serving capacity under concurrent load. In 
 4. **Throughput gap widens with batch size and sequence length** — the Python-level `update_cache()` bottleneck compounds. Production systems (vLLM, TGI) eliminate this with fused CUDA kernels (`paged_attention_v1/v2`)
 5. **`block_size=16` is the sweet spot** — balances fragmentation (21.9%) against lookup overhead (only 4% slower than the coarsest blocks)
 6. **Allocator fails cleanly** — `MemoryError` at the exact capacity boundary, enabling reliable admission control
+7. **Single-user paged latency overhead: 1.4-2.8x** — scales with prompt length due to Python scatter/gather, but variance is extremely tight (+-0.003s)
 
 ### Paged KV Cache Memory Breakdown (estimated, batch_size=4)
 
