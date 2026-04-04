@@ -154,17 +154,17 @@
 
 ### Day 19 - Full Benchmark Suite + Utils (Mar 27)
 
-- ⬜ Implement `benchmarks/load/load_test.py` (simulate 8-32 concurrent users)
-- ⬜ Implement `benchmarks/throughput/throughput_test.py`
-- ⬜ Implement `benchmarks/latency/latency_test.py`
-- ⬜ Concurrent load test (4, 8, 16, 32 users) — throughput + latency distribution
-- ⬜ Queue depth / backpressure test (100 requests, max_batch=4)
-- ⬜ Request arrival patterns (burst vs steady vs Poisson)
-- ⬜ Test with short, medium, and long prompts
-- ⬜ Measure p50, p90, p95, p99 latency under load
-- ⬜ Measure tokens/sec throughput under load
-- ⬜ Record GPU utilization and memory consumption
-- ⬜ Document results + plots
+- ✅ Implement `benchmarks/load/load_test.py` (simulate 1-128 concurrent users)
+- ✅ Implement `benchmarks/throughput/throughput_test.py`
+- ✅ Implement `benchmarks/latency/latency_test.py`
+- ✅ Concurrent load test (4, 8, 16, 32 users) — throughput + latency distribution
+- ✅ Queue depth / backpressure test (100 requests, max_batch=4)
+- ✅ Request arrival patterns (burst vs steady vs Poisson)
+- ✅ Test with short, medium, and long prompts
+- ✅ Measure p50, p90, p95, p99 latency under load
+- ✅ Measure tokens/sec throughput under load
+- ✅ Record GPU utilization and memory consumption
+- ✅ Document results + plots
 
 ### Day 20 - Refinement (Mar 28)
 
@@ -196,7 +196,7 @@
 | + Batch Inference | 11 | 2-8 prompts, throughput gain | [batched.md](benchmark/batched_kv_cache_benchmark.md) |
 | + Continuous Batching | 13 | dynamic join/leave, GPU util improvement | [continuous_batching.md](benchmark/continuous_batching_benchmark.md) |
 | + Paged KV Cache | 16 | memory usage under concurrent requests | [paged_kv_cache.md](benchmark/paged_kv_cache_benchmark.md) |
-| Full Load Test | 18 | 8-32 users, p95 latency, tokens/sec, GPU memory | link |
+| Full Load Test | 19 | 1-128 users, p95 latency, tokens/sec, GPU memory | [load_test.md](benchmark/load_test_benchmark.md) |
 
 ---
 

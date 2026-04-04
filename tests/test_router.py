@@ -1,9 +1,12 @@
-import pytest, uuid, pytest_asyncio, asyncio
+import pytest, uuid, pytest_asyncio, asyncio, logging
 from unittest.mock import MagicMock
 
 from llm_engine import InferenceEngine, ContinuousBatchingScheduler, \
                        Router, RequestHandler, Tokenizer
 from llm_engine import load_asset_paths
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     
 @pytest.fixture
 def router():
@@ -141,9 +144,19 @@ async def async_router():
          
     engine = MagicMock(spec = InferenceEngine)
     
-    engine.generate.return_value = {"generated_text": "mocked output", \
-                                    "token_count": 10, \
-                                    "stop_reason": "max_tokens"}
+    engine.generate.return_value = [{"generated_text": "mocked output",
+                                    "token_count": 10,
+                                    "stop_reason": "max_tokens"}]
+    
+    # Note: If any async test sends multiple concurrent requests that get batched together, 
+    # the mock would need to return multiple dicts. You could use side_effect instead to 
+    # dynamically return the right number of dicts based on the input:
+    # engine.generate.side_effect = lambda input_text, **kwargs: [
+    #                                                         {"generated_text": "mocked output", 
+    #                                                          "token_count": 10, 
+    #                                                          "stop_reason": "max_tokens"}
+    #                                                         for _ in input_text
+    #                                                     ]
     
     router =  Router(request_handler = request_handler, 
                     scheduler = scheduler, 
@@ -159,6 +172,8 @@ async def test_async_generate_valid_request(async_router):
     async_router.start()  # Start the async router's background tasks
         
     result = await async_router.generate("Hello_world", 50)
+    
+    # logger.info(f"Async generate result: {result}")
     
     assert isinstance(result, dict), "Result should be a dictionary"
     assert "request_id" in result, "Result should contain request_id"
@@ -213,7 +228,7 @@ async def test_async_generate_engine_called_correctly(async_router):
     async_router.start()  # Start the async router's background tasks
     
     result = await async_router.generate("Hello world", 50)
-    async_router.engine.generate.assert_called_once_with(input_text="Hello world", max_tokens=50)
+    async_router.engine.generate.assert_called_once_with(input_text=["Hello world"], max_tokens=50)
     
 @pytest.mark.asyncio     # ← on every async test
 async def test_async_generate_invalid_prompt(async_router):

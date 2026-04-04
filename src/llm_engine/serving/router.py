@@ -7,16 +7,25 @@ via RequestHandler, manages scheduling via ContinuousBatchingScheduler,
 runs inference via InferenceEngine, and returns the final result.
 
 Supports two modes:
-- Synchronous (async_mode=False): processes one request at a time inline (Day 17 baseline).
-- Asynchronous (async_mode=True): accepts concurrent requests via asyncio futures and
-  processes them in batches through a background generation loop (Day 18).
+- Synchronous (async_mode=False): processes one request at a time inline.
+- Asynchronous (async_mode=True): accepts concurrent requests via asyncio futures
+  and processes them in batches through a background generation loop. The scheduler
+  groups up to max_batch_size requests, which are passed as a list to
+  engine.generate() for a single batched GPU forward pass.
+
+Error handling: if engine.generate() fails during batched inference, all futures
+in the affected batch are resolved with the exception, and the loop continues
+processing subsequent batches.
 """
 
-import asyncio 
+import asyncio, logging
 
 from .request_handler import RequestHandler
 from ..inference.inference_engine import InferenceEngine
 from ..scheduler.continuous_batching import ContinuousBatchingScheduler
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class Router:
     def __init__(self, 
@@ -65,8 +74,8 @@ class Router:
         '''
         Description:
             Start the Router. In async mode, launches the background _generation_loop
-            as an asyncio Task that continuously drains the scheduler. In sync mode,
-            this is a no-op.
+            as an asyncio Task that continuously drains the scheduler and runs batched
+            inference. In sync mode, this is a no-op.
         Args:
             None
         Returns:
@@ -84,6 +93,8 @@ class Router:
         Description:
             Stop the Router's background generation loop. Cancels the asyncio Task
             if it is running. Safe to call even if the loop was never started.
+        Args:
+            None
         Returns:
             None
         '''
@@ -102,12 +113,14 @@ class Router:
             Process a single generation request end-to-end.
 
             Sync mode: validates the prompt, submits it to the scheduler, runs
-            inference via the engine inline, marks the request as completed, and
-            returns the result immediately.
+            inference via the engine inline (single prompt), marks the request as
+            completed, and returns the result immediately.
 
             Async mode: validates the prompt, submits it to the scheduler, creates
             an asyncio Future, and awaits the result. The background _generation_loop
-            processes the request and resolves the Future when done.
+            batches multiple pending requests and runs them through a single
+            engine.generate() call. The Future is resolved when the batch completes.
+            If inference fails, the Future receives the exception.
         Args:
             prompt (str): The input text to generate from.
             max_tokens (int): Maximum number of tokens to generate.
@@ -116,6 +129,8 @@ class Router:
                 token_count, and stop_reason.
         Raises:
             ValueError: If prompt is empty/non-string, or max_tokens is invalid.
+            Exception: Re-raised from engine.generate() if batched inference fails
+                (async mode only, propagated via Future.set_exception).
         '''
         
         # Synchronous path for backward compatibility
@@ -160,9 +175,18 @@ class Router:
         Description:
             Background coroutine that runs continuously in async mode. On each
             iteration, acquires the lock, checks if the scheduler has pending
-            requests, and if so, steps the scheduler to get the active batch,
-            runs inference for each request, marks them complete, and resolves
-            the corresponding asyncio Futures to wake up waiting generate() callers.
+            requests, and if so, steps the scheduler to get the active batch.
+
+            Collects all prompts and max_tokens from the batch and calls
+            engine.generate() once with the full list for batched GPU inference.
+            After generation, marks each request as complete and resolves the
+            corresponding asyncio Futures to wake up waiting generate() callers.
+
+            If engine.generate() raises an exception, logs the error and resolves
+            all futures in the affected batch with set_exception() so clients
+            receive a 500 error instead of hanging. The loop continues processing
+            subsequent batches.
+
             When idle, sleeps for 10ms to avoid busy-spinning and releases the
             lock so new requests can be added.
         Args:
@@ -179,24 +203,42 @@ class Router:
                     has_work = True
                     batch = self.scheduler.step()
                     
-                    for request in batch:
-                        
-                        result = self.engine.generate(input_text = request.prompt, 
-                                                      max_tokens = request.max_tokens)
-                        
-                        self.scheduler.complete_request(request_id = request.request_id)
-            
-                        result_dict = {
-                                        "request_id": request.request_id,
-                                        "prompt": request.prompt,
-                                        "generated_text": result['generated_text'],
-                                        "token_count": result['token_count'],
-                                        "stop_reason": result['stop_reason']
-                                    }
-                
-                        future = self._pending_futures.pop(request.request_id, None)
-                        
-                        future.set_result(result_dict)
+                    if batch:
+                        try:
+                            prompts = [request.prompt for request in batch]
+                            max_tokens_list = [request.max_tokens for request in batch]
+                            results = self.engine.generate(input_text = prompts, 
+                                                        max_tokens = max(max_tokens_list))
+                            
+                            for request, result in zip(batch, results):
+                                
+                                self.scheduler.complete_request(request_id = request.request_id)
+                                
+                                result_dict = {
+                                            "request_id": request.request_id,
+                                            "prompt": request.prompt,
+                                            "generated_text": result['generated_text'],
+                                            "token_count": result['token_count'],
+                                            "stop_reason": result['stop_reason']
+                                        }
+                                
+                                future = self._pending_futures.pop(request.request_id, None)
+                                
+                                if future and not future.done():
+                                    future.set_result(result_dict)
+                        except Exception as e:
+                            
+                            logger.error("Generation loop error: %s", e, exc_info=True)
+                            # logger.info(f"results: {results}")
+                            
+                            for request in batch:
+                                try:
+                                    self.scheduler.complete_request(request_id=request.request_id)
+                                except Exception:
+                                    pass
+                                future = self._pending_futures.pop(request.request_id, None)
+                                if future and not future.done():
+                                    future.set_exception(e)
                         
             if not has_work:
                 

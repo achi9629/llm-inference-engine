@@ -1,9 +1,10 @@
-import uvicorn
+import uvicorn, argparse, torch
+
 from llm_engine import load_asset_paths, load_model, create_app
 from llm_engine import Tokenizer, InferenceEngine, ContinuousBatchingScheduler, \
                        RequestHandler, Router
 
-def start_server():
+def start_server(args: argparse = None) -> None:
     
     config, model_cfg = load_asset_paths()
     
@@ -11,9 +12,7 @@ def start_server():
     
     tokenizer = Tokenizer(config)
     
-    device = 'cuda:0'
-    batch_size = 1
-    max_batch_size = 4
+    device = "cuda:" + str(args.device) if torch.cuda.is_available() else "cpu"
     
     engine = InferenceEngine(model = model,
                              device = device,
@@ -22,25 +21,38 @@ def start_server():
                              sampling_method = 'greedy',
                              is_kv_cache_enabled = True,
                              max_tokens_for_kv_cache = model_cfg['n_ctx'],
-                             batch_size = batch_size,
+                             batch_size = 1,
                              model_cfg = model_cfg,
-                             cache_type = 'paged',
-                             num_blocks = 128,
+                             cache_type = args.cache_type,
+                             num_blocks = 512,
                              block_size = 16)
     
-    scheduler = ContinuousBatchingScheduler(max_batch_size = max_batch_size)
+    scheduler = ContinuousBatchingScheduler(max_batch_size = args.max_batch_size)
     
     handler = RequestHandler(tokenizer = tokenizer, max_model_len = model_cfg['n_ctx'])
     
-    router = Router(request_handler = handler, scheduler = scheduler, engine = engine)
+    router = Router(request_handler = handler, 
+                    scheduler = scheduler, 
+                    engine = engine,
+                    async_mode = args.async_mode)
     
     app = create_app(router)
     
     uvicorn.run(app, host = "127.0.0.1", port = 8000)
     
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run the LLM inference server")
+    parser.add_argument("--device", type=int, default = 0, help="Device to run the model on (e.g., 0,1,2,3 for CUDA devices)")
+    parser.add_argument("--cache_type", type=str, default = 'paged', help="Type of KV cache to use (e.g., 'paged', 'full')")
+    parser.add_argument("--max_batch_size", type=int, default = 32, help="Maximum batch size for inference")
+    parser.add_argument("--async_mode", action='store_true', help="Whether to use asynchronous processing for requests")
+    
+    return parser.parse_args()
+    
 if __name__ == "__main__":
     
-    start_server()
+    args = parse_args()
+    start_server(args)
     
     
                                             

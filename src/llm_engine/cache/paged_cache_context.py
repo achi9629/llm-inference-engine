@@ -85,8 +85,10 @@ class PagedCacheContext:
         batch_size = k.size(0)
         for batch_idx in range(batch_size):
             start = self.seq_lens[batch_idx]
-            end = k.size(2)
-            for t in range(end):
+            # For decode stage with seq_len = 1, we still want to write the 
+            # single new token into the cache and read back the full history.
+            T_new = k.size(2)
+            for t in range(T_new):
                 token_pos = start + t
                 block_index = token_pos // self.block_size
                 offset = token_pos % self.block_size
@@ -107,15 +109,15 @@ class PagedCacheContext:
             k_seq, v_seq = self.paged_kv_cache.read(layer_idx =layer_idx,
                                                     block_ids = block_ids)
             
-            k_seq = k_seq[ :, :, : start + end, : ].squeeze(0)
-            v_seq = v_seq[ :, :, : start + end, : ].squeeze(0)
+            k_seq = k_seq[ :, :, : start + T_new, : ].squeeze(0)
+            v_seq = v_seq[ :, :, : start + T_new, : ].squeeze(0)
             
             k_full.append(k_seq.transpose(0,1))
             v_full.append(v_seq.transpose(0,1))
             
             self.increment_seq_len(batch_idx = batch_idx,
                                    layer_idx = layer_idx,
-                                   T_new = end)
+                                   T_new = T_new)
             
         k_full = pad_sequence(k_full, batch_first=True, padding_value=0.0).transpose(1,2)
         v_full = pad_sequence(v_full, batch_first=True, padding_value=0.0).transpose(1,2)
