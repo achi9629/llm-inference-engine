@@ -25,7 +25,6 @@ from ..inference.inference_engine import InferenceEngine
 from ..scheduler.continuous_batching import ContinuousBatchingScheduler
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 class Router:
     def __init__(self, 
@@ -208,7 +207,7 @@ class Router:
                             prompts = [request.prompt for request in batch]
                             max_tokens_list = [request.max_tokens for request in batch]
                             results = self.engine.generate(input_text = prompts, 
-                                                        max_tokens = max(max_tokens_list))
+                                                        max_tokens = max_tokens_list)
                             
                             for request, result in zip(batch, results):
                                 
@@ -229,7 +228,6 @@ class Router:
                         except Exception as e:
                             
                             logger.error("Generation loop error: %s", e, exc_info=True)
-                            # logger.info(f"results: {results}")
                             
                             for request in batch:
                                 try:

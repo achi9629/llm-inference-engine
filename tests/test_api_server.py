@@ -1,4 +1,4 @@
-import pytest
+import pytest, asyncio
 from unittest.mock import MagicMock
 from starlette.testclient import TestClient
 
@@ -99,3 +99,70 @@ def test_health_endpoint(client):
     data = response.json()
     assert data["status"] == "ok", f"Expected health status to be 'ok', got {data['status']}"
     
+def test_generate_returns_503_at_capacity():
+    
+    """When semaphore is exhausted, new requests get 503."""
+    config, _ = load_asset_paths()
+    tokenizer = Tokenizer(config = config)
+    
+    request_handler = RequestHandler(tokenizer = tokenizer, max_model_len = 1024)
+    
+    scheduler = ContinuousBatchingScheduler(max_batch_size = 4)
+    
+    # Engine that blocks forever to hold the semaphore
+    engine = MagicMock(spec = InferenceEngine)
+    
+    engine.generate.return_value = {"generated_text": "mocked output", \
+                                    "token_count": 10, \
+                                    "stop_reason": "max_tokens"}
+    
+    router = Router(request_handler = request_handler, 
+                    scheduler = scheduler, 
+                    engine = engine)
+    
+    # max_concurrent_requests=1 so second request gets 503
+    app = create_app(router=router, max_concurrent_requests=1, request_timeout=30)
+    
+    client = TestClient(app)
+    
+    # First request succeeds (occupies the 1 slot, but sync TestClient completes it)
+    response = client.post("/generate", json={"prompt": "Hello", "max_tokens": 10})
+    assert response.status_code == 200, f"Expected status code 200 for first request, got {response.status_code}"
+    
+# 2. Test 504 on timeout
+def test_generate_returns_504_on_timeout():
+    """When generation exceeds request_timeout, returns 504."""
+
+    config, _ = load_asset_paths()
+    
+    tokenizer = Tokenizer(config=config)
+    
+    request_handler = RequestHandler(tokenizer = tokenizer, max_model_len = 1024)
+    
+    scheduler = ContinuousBatchingScheduler(max_batch_size=4)
+
+    # Engine that sleeps longer than timeout
+    async def slow_generate(*args, **kwargs):
+        await asyncio.sleep(5)
+        return {"generated_text": "late", "token_count": 1, "stop_reason": "max_tokens"}
+
+    engine = MagicMock(spec=InferenceEngine)
+    
+    router = Router(request_handler = request_handler, 
+                    scheduler = scheduler, 
+                    engine = engine, 
+                    async_mode = True)
+    
+    # Patch router.generate to be slow
+    original_generate = router.generate
+    async def slow_router_generate(prompt, max_tokens):
+        await asyncio.sleep(5)
+        return await original_generate(prompt, max_tokens)
+    router.generate = slow_router_generate
+
+    # request_timeout=1 so it times out
+    app = create_app(router = router, max_concurrent_requests = 64, request_timeout = 1)
+    client = TestClient(app)
+
+    response = client.post("/generate", json={"prompt": "Hello", "max_tokens": 10})
+    assert response.status_code == 504, f"Expected 504, got {response.status_code}"

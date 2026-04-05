@@ -7,6 +7,7 @@ and a /health endpoint for liveness checks. Uses a factory function
 pattern to inject the Router dependency.
 """
 
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -25,7 +26,10 @@ class GenerateRequest(BaseModel):
     prompt: str
     max_tokens: int
         
-def create_app(router: Router) -> FastAPI:
+def create_app(router: Router, 
+               max_concurrent_requests: int = 256,
+               request_timeout: int = 30,
+    ) -> FastAPI:
     
     """
     Description:
@@ -37,6 +41,7 @@ def create_app(router: Router) -> FastAPI:
     """
 
     app = FastAPI()
+    semaphore = asyncio.Semaphore(max_concurrent_requests)
     
     @app.on_event("startup")
     async def startup_event():
@@ -44,11 +49,18 @@ def create_app(router: Router) -> FastAPI:
     
     @app.post("/generate")
     async def generate(request: GenerateRequest):
-        try:
-            response = await router.generate(request.prompt, request.max_tokens)
-            return response
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        if semaphore.locked():
+            raise HTTPException(status_code=503, detail="Server at capacity")
+        async with semaphore:
+            try:
+                response = await asyncio.wait_for(router.generate(request.prompt, request.max_tokens),
+                                                  timeout = request_timeout
+                                )
+                return response
+            except asyncio.TimeoutError:
+                raise HTTPException(status_code=504, detail="Request timed out")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
 
     @app.get("/health")
     def health():

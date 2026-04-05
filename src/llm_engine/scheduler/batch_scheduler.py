@@ -10,8 +10,6 @@ Acts as the central coordinator between the request queue and the
 inference engine.
 """
 
-from typing import List
-
 from .request_queue import RequestQueue
 from .request import Request, RequestState
 
@@ -46,7 +44,7 @@ class BatchScheduler:
         
         self.request_queue.add(request)
         
-    def schedule(self) -> List[Request]:
+    def schedule(self) -> list[Request]:
         
         '''
         Description:
@@ -56,7 +54,7 @@ class BatchScheduler:
         Args:
             None
         Returns:
-            List[Request]: A list of requests that have been scheduled to run.
+            list[Request]: A list of requests that have been scheduled to run.
         '''
         
         batch = self.request_queue.get_batch(self.max_batch_size)
@@ -65,7 +63,7 @@ class BatchScheduler:
             self.running_requests[req.request_id] = req
         return batch
     
-    def get_running_requests(self) -> List[Request]:
+    def get_running_requests(self) -> list[Request]:
         
         '''
         Description:
@@ -73,7 +71,7 @@ class BatchScheduler:
         Args:
             None
         Returns:
-            List[Request]: A list of currently running requests.
+            list[Request]: A list of currently running requests.
         '''
         
         return list(self.running_requests.values())

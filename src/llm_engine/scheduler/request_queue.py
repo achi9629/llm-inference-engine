@@ -8,7 +8,6 @@ and groups them into batches for inference.
 """
 
 from collections import deque
-from typing import List, Optional
 
 from .request import Request
 
@@ -43,7 +42,7 @@ class RequestQueue :
         
         self.queue.append(request)
         
-    def pop(self) -> Optional[Request]:
+    def pop(self) -> Request | None:
         
         '''
         Description:
@@ -53,14 +52,14 @@ class RequestQueue :
         Args:
             None
         Returns:
-            Optional[Request]: The next request in the queue, or None if the queue is empty.
+            Request | None: The next request in the queue, or None if the queue is empty.
         '''
         
         if self.queue:
             return self.queue.popleft()
         return None
     
-    def get_batch(self, max_batch_size: int) -> List[Request]:
+    def get_batch(self, max_batch_size: int) -> list[Request]:
         
         '''
         Description:
@@ -71,7 +70,7 @@ class RequestQueue :
         Args:
             max_batch_size (int): The maximum number of requests to include in the batch.
         Returns:
-            List[Request]: A list of requests retrieved from the queue, up to the specified batch size.
+            list[Request]: A list of requests retrieved from the queue, up to the specified batch size.
         '''
     
         batch = []

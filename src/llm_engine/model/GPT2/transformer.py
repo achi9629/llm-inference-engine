@@ -109,7 +109,7 @@ class GPT2(nn.Module):
         # token embeddings: (B, T) -> (B, T, n_embd)
         tok_emb = self.wte(input_ids)
         
-        # # This approach does not work with havving left padding tokens, 
+        # # This approach does not work with having left padding tokens, 
         # # since the position ids will be shifted by the number of padding tokens, 
         # # which is not correct.
         # # position embeddings with offset: arange(start_pos, start_pos + T) -> (1, T) -> (B, T, n_embd)

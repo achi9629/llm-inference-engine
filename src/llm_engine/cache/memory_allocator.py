@@ -9,7 +9,6 @@ Used by PagedKVCache (Day 16) to allocate/free blocks on demand.
 Time Complexity: O(k) allocate, O(m) free, O(1) num_free_blocks
 '''
 
-from typing import List
 from collections import deque
 
 class MemoryAllocator:
@@ -30,7 +29,7 @@ class MemoryAllocator:
         self.free_blocks = deque(range(num_blocks))
         self.allocated_blocks = set()
         
-    def allocate(self, num_blocks: int) -> List[int]:
+    def allocate(self, num_blocks: int) -> list[int]:
         
         '''
         Description:
@@ -39,7 +38,7 @@ class MemoryAllocator:
         Args:
             num_blocks (int): Number of blocks to allocate.
         Returns:
-            List[int]: List of allocated block IDs.
+            Llistist[int]: List of allocated block IDs.
         Raises:
             MemoryError: If num_blocks exceeds the number of free blocks.
         '''
@@ -55,14 +54,14 @@ class MemoryAllocator:
             
         return allocated
     
-    def free(self, block_ids: List[int]) -> None:
+    def free(self, block_ids: list[int]) -> None:
         
         '''
         Description:
             Returns block IDs to the free list and removes them from the allocated set.
             Validates each block ID for bounds and double-free before releasing.
         Args:
-            block_ids (List[int]): List of block IDs to free.
+            block_ids (list[int]): List of block IDs to free.
         Returns:
             None
         Raises:

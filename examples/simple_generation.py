@@ -34,14 +34,18 @@ def main():
         "The future of artificial intelligence",
         "In a galaxy far far away",
         "The key to understanding transformers is",
+        ["Once upon a time, in a land of magic and wonder, there lived a young wizard named Alaric."]
     ]
     
     for prompt in prompts:
         
         result = engine.generate(prompt, max_tokens)
+
+        if isinstance(result, list) and len(result) == 1:
+            result = result[0]
         
         print('\nPrompt:', result ['input_text'])
-        print('Generated Text:', result ['generated_text'][0])
+        print('Generated Text:', result ['generated_text'])
         print('Sampling Method:', result ['sampling_method'])
         print('Tokens Generated:', result ['token_count'])
         print(f"Stop Reason: {result ['stop_reason']}")

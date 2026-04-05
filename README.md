@@ -20,14 +20,14 @@ Each layer builds on the previous one. Benchmarks at each checkpoint quantify th
 
 ### Paged KV Cache vs PagedAttention
 
-| | Paged KV Cache | PagedAttention |
-|---|---|---|
-| **What** | Memory management layer — stores KV entries in fixed-size blocks instead of contiguous tensors | Complete attention algorithm — computes Q×K^T, softmax, weighted sum directly on non-contiguous blocks in a single fused CUDA kernel |
-| **Components** | Memory allocator, block table, paged KV cache tensor pool | Paged KV cache + custom CUDA attention kernel (`paged_attention_v1/v2`) |
-| **Analogy** | Virtual memory pages in an OS | Virtual memory + hardware TLB that translates addresses in-line |
-| **This project** | ✅ Fully implemented (Python) | ❌ Not implemented — would require custom CUDA kernels |
-| **Performance** | Memory savings (up to 8.7x at large batch sizes). ~2x throughput overhead from Python scatter/gather | Memory savings + zero throughput overhead (fused kernel eliminates Python loops) |
-| **Reference** | OS virtual memory concepts | [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023) |
+|                  | Paged KV Cache                                                                                                        | PagedAttention                                                                                                                           |
+|------------------|-----------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| **What**         | Memory management layer — stores KV entries in fixed-size blocks instead of contiguous tensors                        | Complete attention algorithm — computes Q×K^T, softmax, weighted sum directly on non-contiguous blocks in a single fused CUDA kernel     |
+| **Components**   | Memory allocator, block table, paged KV cache tensor pool                                                             | Paged KV cache + custom CUDA attention kernel (`paged_attention_v1/v2`)                                                                  |
+| **Analogy**      | Virtual memory pages in an OS                                                                                         | Virtual memory + hardware TLB that translates addresses in-line                                                                          |
+| **This project** | ✅ Fully implemented (Python)                                                                                         | ❌ Not implemented — would require custom CUDA kernels                                                                                   |
+| **Performance**  | Memory savings (up to 8.7x at large batch sizes). ~1.4–1.8x throughput overhead from vectorized Python scatter/gather | Memory savings + zero throughput overhead (fused kernel eliminates Python loops)                                                         |
+| **Reference**    | OS virtual memory concepts                                                                                            | [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023) |
 
 **In short:** Paged KV Cache is the data structure. PagedAttention is the data structure + a fused kernel that operates on it. This project implements the former to understand the memory management principles. Production systems (vLLM) add the latter for zero-overhead paged attention.
 
@@ -106,7 +106,8 @@ GPT-2 124M on NVIDIA A100-SXM4-80GB, fp32, single request, greedy decoding.
 - **Throughput tradeoff:** ~2x slower at small batches due to Python-level scatter/gather (no fused CUDA kernel)
 - **OOM boundary:** Standard hits CUDA OOM at batch 1024; paged survives to 1024 (7,312 MB) and hits block exhaustion at 2048 — **9x less memory at batch 512**
 
-> Full benchmark details: [baseline_benchmark.md](docs/benchmark/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/benchmark/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/benchmark/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/benchmark/continuous_batching_benchmark.md)| [paged_kv_cache_benchmark.md](docs/benchmark/paged_kv_cache_benchmark.md)
+> Full benchmark details: [baseline_benchmark.md](docs/benchmark/baseline_benchmark.md) | [kv_cache_benchmark.md](docs/benchmark/kv_cache_benchmark.md) | [batched_kv_cache_benchmark.md](docs/benchmark/batched_kv_cache_benchmark.md) | [continuous_batching_benchmark.md](docs/benchmark/continuous_batching_benchmark.md)| [paged_kv_cache_benchmark.md](docs/benchmark/paged_kv_cache_benchmark.md) | [load_test_benchmark.md](docs/benchmark/load_test_benchmark.md)
+
 ## Project Structure
 
 ```bash

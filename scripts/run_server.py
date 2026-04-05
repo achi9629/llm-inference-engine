@@ -1,12 +1,15 @@
 import uvicorn, argparse, torch
 
-from llm_engine import load_asset_paths, load_model, create_app
+from llm_engine import load_asset_paths, load_model, create_app, load_scheduler_config, \
+                       load_server_config
 from llm_engine import Tokenizer, InferenceEngine, ContinuousBatchingScheduler, \
                        RequestHandler, Router
 
 def start_server(args: argparse = None) -> None:
     
     config, model_cfg = load_asset_paths()
+    scheduler_cfg = load_scheduler_config()
+    server_cfg = load_server_config()
     
     model = load_model(config, model_cfg)
     
@@ -27,7 +30,7 @@ def start_server(args: argparse = None) -> None:
                              num_blocks = 512,
                              block_size = 16)
     
-    scheduler = ContinuousBatchingScheduler(max_batch_size = args.max_batch_size)
+    scheduler = ContinuousBatchingScheduler(max_batch_size = scheduler_cfg['max_batch_size'])
     
     handler = RequestHandler(tokenizer = tokenizer, max_model_len = model_cfg['n_ctx'])
     
@@ -36,15 +39,17 @@ def start_server(args: argparse = None) -> None:
                     engine = engine,
                     async_mode = args.async_mode)
     
-    app = create_app(router)
+    app = create_app(router = router,
+                     max_concurrent_requests = server_cfg['max_concurrent_requests'],
+                     request_timeout = server_cfg['timeout'])
     
-    uvicorn.run(app, host = "127.0.0.1", port = 8000)
+    uvicorn.run(app, host = server_cfg['host'], port = server_cfg['port']
+        )
     
 def parse_args():
     parser = argparse.ArgumentParser(description="Run the LLM inference server")
     parser.add_argument("--device", type=int, default = 0, help="Device to run the model on (e.g., 0,1,2,3 for CUDA devices)")
     parser.add_argument("--cache_type", type=str, default = 'paged', help="Type of KV cache to use (e.g., 'paged', 'full')")
-    parser.add_argument("--max_batch_size", type=int, default = 32, help="Maximum batch size for inference")
     parser.add_argument("--async_mode", action='store_true', help="Whether to use asynchronous processing for requests")
     
     return parser.parse_args()

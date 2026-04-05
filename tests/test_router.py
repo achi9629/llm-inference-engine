@@ -228,7 +228,7 @@ async def test_async_generate_engine_called_correctly(async_router):
     async_router.start()  # Start the async router's background tasks
     
     result = await async_router.generate("Hello world", 50)
-    async_router.engine.generate.assert_called_once_with(input_text=["Hello world"], max_tokens=50)
+    async_router.engine.generate.assert_called_once_with(input_text=["Hello world"], max_tokens = [50])
     
 @pytest.mark.asyncio     # ← on every async test
 async def test_async_generate_invalid_prompt(async_router):

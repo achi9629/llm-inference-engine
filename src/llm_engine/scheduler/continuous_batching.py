@@ -17,7 +17,6 @@ Optionally integrates with PagedKVCache via BlockTable:
 """
 
 import math
-from typing import List, Optional
 
 from .request_queue import RequestQueue
 from .request import Request, RequestState
@@ -27,8 +26,8 @@ from ..cache.paged_kv_cache import PagedKVCache
 class ContinuousBatchingScheduler:
     def __init__(self, 
                  max_batch_size: int,
-                 block_table: Optional[BlockTable] = None,
-                 paged_kv_cache: Optional[PagedKVCache] = None,
+                 block_table: BlockTable | None = None,
+                 paged_kv_cache: PagedKVCache | None = None,
         ) ->None:
         
         '''
@@ -38,8 +37,8 @@ class ContinuousBatchingScheduler:
             allocates blocks for new requests and frees blocks when requests finish.
         Args:
             max_batch_size (int): Maximum number of requests in the active batch.
-            block_table (Optional[BlockTable]): Block table for paged KV cache management. None disables paging.
-            paged_kv_cache (Optional[PagedKVCache]): Paged KV cache for block-level reset on eviction. None disables paging.
+            block_table (BlockTable | None): Block table for paged KV cache management. None disables paging.
+            paged_kv_cache (PagedKVCache | None): Paged KV cache for block-level reset on eviction. None disables paging.
         Returns:
             None
         '''
@@ -66,7 +65,7 @@ class ContinuousBatchingScheduler:
         
         self.request_queue.add(request)
         
-    def step(self) -> List[Request]:
+    def step(self) -> list[Request]:
         
         '''
         Description:
@@ -79,7 +78,7 @@ class ContinuousBatchingScheduler:
         Args:
             None
         Returns:
-            List[Request]: Currently active requests after the scheduling step.
+            list[Request]: Currently active requests after the scheduling step.
         '''
         
         # 1. Remove finished requests
@@ -105,7 +104,7 @@ class ContinuousBatchingScheduler:
         # 3. Return active batch
         return list(self.running_requests.values())
     
-    def get_active_batch(self) -> List[Request]:
+    def get_active_batch(self) -> list[Request]:
         
         '''
         Description:

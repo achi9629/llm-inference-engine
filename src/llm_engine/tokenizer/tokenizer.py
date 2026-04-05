@@ -1,6 +1,5 @@
 import torch
 from pathlib import Path
-from typing import overload, Literal
 from transformers import GPT2TokenizerFast
 
 class Tokenizer:
@@ -176,9 +175,6 @@ class Tokenizer:
         Returns:
             str: The decoded text with special tokens removed.
         """
-        
-        # if isinstance(tokens[0], list | torch.Tensor):
-        #     raise TypeError('For batch decoding and tensor input, use batch_decode method instead.')
 
         decoded = self.tokenizer.decode(tokens, 
                                      skip_special_tokens=True,

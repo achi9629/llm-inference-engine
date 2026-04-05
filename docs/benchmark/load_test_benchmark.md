@@ -48,28 +48,29 @@
 
 | Concurrency | Short tok/s | Medium tok/s | Long tok/s |
 |:-----------:|:-----------:|:------------:|:----------:|
-| 1           | 116         | 112          | 91         |
-| 4           | 292         | 269          | 173        |
-| 8           | 398         | 354          | 203        |
-| 16          | 491         | 425          | 205        |
-| 32          | 503         | 428          | 229        |
-| 64          | **532**     | **455**      | **234**    |
-| 128         | 519         | 433          | 219        |
+| 1           | 110         | 107          | 106        |
+| 4           | 418         | 400          | 394        |
+| 8           | 769         | 758          | 714        |
+| 16          | 1,385       | 1,341        | 1,190      |
+| 32          | 1,446       | 1,002        | 1,306      |
+| 64          | **1,840**   | **1,749**    | **1,582**  |
+| 128         | 1,659       | 1,442        | 1,023      |
 
 ### Side-by-Side (Peak at c=64)
 
-| Prompt | Standard (c=64) | Paged (c=64) | Speedup  |
-|--------|-----------------|--------------|----------|
-| Short  | 165 tok/s       | 532 tok/s    | **3.2x** |
-| Medium | 166 tok/s       | 455 tok/s    | **2.7x** |
-| Long   | 167 tok/s       | 234 tok/s    | **1.4x** |
+| Prompt | Standard (c=64) | Paged (c=64)  | Speedup   |
+|--------|-----------------|---------------|-----------|
+| Short  | 165 tok/s       | 1,840 tok/s   | **11.1x** |
+| Medium | 166 tok/s       | 1,749 tok/s   | **10.5x** |
+| Long   | 167 tok/s       | 1,582 tok/s   | **9.5x**  |
 
 **Observations:**
 
 - Standard throughput is **completely flat** (~165 tok/s) regardless of concurrency — requests are serialized due to `batch_size=1`
-- Paged throughput **scales with concurrency** because `_generation_loop` batches multiple requests into a single `engine.generate()` call, enabling GPU parallelism
-- Peak throughput at c=64 for all prompt types; slight decline at c=128 due to scheduling overhead and batch cycling
-- **Long prompts show smaller gains** because each autoregressive step processes more KV entries — compute per token grows, limiting batching benefits
+- Paged throughput **scales aggressively with concurrency** — vectorized cache operations (batched `index_select` reads, advanced-indexing writes) enable massive GPU parallelism
+- Peak throughput at c=64 for all prompt types; decline at c=128 due to scheduling overhead and batch cycling
+- **Long prompts now achieve comparable speedups** (9.5x vs 11.1x for short) — vectorized `update_cache()` eliminates the per-sequence scatter bottleneck that previously limited long-prompt batching to 1.4x
+- Medium at c=32 shows a throughput dip (1,002 tok/s) — a batch cycling boundary artifact where 32 requests exactly match `max_batch_size=32`, reducing overlap between batches
 
 ![Throughput: Standard vs Paged by Concurrency](../../assets/plots/load_throughput_vs_concurrency.png)
 
@@ -81,31 +82,32 @@
 
 | Concurrency | Std Short | Paged Short | Std Medium | Paged Medium | Std Long | Paged Long |
 |:-----------:|:---------:|:-----------:|:----------:|:------------:|:--------:|:----------:|
-| 1           | 0.32      | 0.43        | 0.32       | 0.44         | 0.31     | 0.55       |
-| 4           | 1.21      | 0.68        | 1.22       | 0.74         | 1.20     | 1.15       |
-| 8           | 2.42      | 1.00        | 2.43       | 1.13         | 2.42     | 1.97       |
-| 16          | 4.83      | 1.63        | 4.88       | 1.88         | 4.81     | 3.90       |
-| 32          | 9.66      | 2.69        | 9.64       | 3.73         | 9.58     | 6.48       |
-| 64          | 19.36     | 6.01        | 9.81       | 7.02         | 19.14    | 13.65      |
-| 128         | 19.51     | 6.76        | 30.40      | 8.43         | 19.30    | 15.95      |
+| 1           | 0.32      | 0.46        | 0.32       | 0.47         | 0.31     | 0.47       |
+| 4           | 1.21      | 0.48        | 1.22       | 0.50         | 1.20     | 0.51       |
+| 8           | 2.42      | 0.52        | 2.43       | 0.53         | 2.42     | 0.56       |
+| 16          | 4.83      | 0.57        | 4.88       | 0.59         | 4.81     | 0.67       |
+| 32          | 9.66      | 1.09        | 9.64       | 1.14         | 9.58     | 1.22       |
+| 64          | 19.36     | 1.73        | 9.81       | 1.82         | 19.14    | 2.00       |
+| 128         | 19.51     | 2.23        | 30.40      | 2.54         | 19.30    | 3.48       |
 
 ### Tail Latency — Short Prompt
 
 | Concurrency | Std p95 (s) | Paged p95 (s) | Std p99 (s) | Paged p99 (s) |
 |:-----------:|:-----------:|:-------------:|:-----------:|:-------------:|
-| 1           | 0.32        | 0.43          | 0.32        | 0.43          |
-| 8           | 2.42        | 1.01          | 2.42        | 1.01          |
-| 32          | 9.66        | 2.91          | 9.66        | 3.18          |
-| 64          | 19.37       | 6.01          | 19.37       | 6.02          |
-| 128         | 12.28       | 12.28         | 12.29       | 12.29         |
+| 1           | 0.32        | 0.46          | 0.32        | 0.46          |
+| 8           | 2.42        | 0.52          | 2.42        | 0.52          |
+| 32          | 9.66        | 1.10          | 9.66        | 1.10          |
+| 64          | 19.37       | 1.73          | 19.37       | 1.74          |
+| 128         | 36.66       | 3.80          | 38.17       | 3.81          |
 
 **Observations:**
 
-- **At c=1:** Paged is slightly slower (0.43s vs 0.32s) due to paged memory management overhead (block allocation, scatter/gather)
-- **At c≥4:** Paged wins — batching amortizes the per-request overhead
+- **At c=1:** Paged is slightly slower (0.46s vs 0.32s) due to paged memory management overhead (block allocation, scatter/gather)
+- **At c≥4:** Paged wins decisively — vectorized batching amortizes the per-request overhead
 - **Standard p50 grows linearly** with concurrency: `p50 ≈ concurrency × single_request_latency`. Classic serial queuing behavior
-- **Paged p50 grows sub-linearly** — true batching processes multiple requests per GPU forward pass
-- **At c=32, short prompt:** Paged delivers **3.6x lower** p50 latency (2.69s vs 9.66s)
+- **Paged p50 stays sub-second up to c=16** (0.57s) and grows much slower than standard — true batching processes multiple requests per GPU forward pass
+- **At c=32, short prompt:** Paged delivers **8.9x lower** p50 latency (1.09s vs 9.66s)
+- **At c=128:** Paged p99 (3.81s) is **10x lower** than standard p95 (36.66s)
 
 ![Latency: p50 by Concurrency](../../assets/plots/load_p50_vs_concurrency.png)
 
@@ -115,18 +117,19 @@
 
 | Concurrency | Std Short | Paged Short | Std Medium | Paged Medium | Std Long | Paged Long |
 |:-----------:|:---------:|:-----------:|:----------:|:------------:|:--------:|:----------:|
-| 1           | 3.17      | 2.31        | 3.13       | 2.25         | 3.17     | 1.82       |
-| 4           | 3.30      | 5.83        | 3.26       | 5.38         | 3.33     | 3.46       |
-| 8           | 3.31      | 7.96        | 3.29       | 7.08         | 3.31     | 4.06       |
-| 16          | 3.31      | 9.82        | 3.28       | 8.50         | 3.32     | 4.10       |
-| 32          | 3.31      | 10.05       | 3.32       | 8.57         | 3.34     | 4.57       |
-| 64          | 3.30      | **10.63**   | 3.32       | **9.10**     | 3.34     | **4.68**   |
-| 128         | 3.32      | 10.39       | 3.30       | 8.65         | 3.33     | 4.39       |
+| 1           | 3.17      | 2.20        | 3.13       | 2.14         | 3.17     | 2.12       |
+| 4           | 3.30      | 8.36        | 3.26       | 8.00         | 3.33     | 7.87       |
+| 8           | 3.31      | 15.38       | 3.29       | 15.16        | 3.31     | 14.28      |
+| 16          | 3.31      | 27.71       | 3.28       | 26.82        | 3.32     | 23.80      |
+| 32          | 3.31      | 28.92       | 3.32       | 20.03        | 3.34     | 26.11      |
+| 64          | 3.30      | **36.79**   | 3.32       | **34.98**    | 3.34     | **31.64**  |
+| 128         | 3.32      | 33.18       | 3.30       | 28.84        | 3.33     | 20.46      |
 
 **Observations:**
 
 - Standard: flat at ~3.3 req/s (one request at a time, each taking ~0.3s)
-- Paged short: scales to **10.63 req/s** (3.2x improvement)
+- Paged short: scales to **36.79 req/s** (11.1x improvement over standard)
+- Paged long: scales to **31.64 req/s** (9.5x improvement) — prompt length gap is now small
 - req/s = tok/s ÷ 50 (since max_tokens=50 for all requests)
 
 ---
@@ -147,13 +150,13 @@ Paged KV cache stores K/V at the per-sequence, per-block level with no batch dim
 
 ### Performance Summary
 
-| Metric                        | Standard (sequential) | Paged (batched) |
-|-------------------------------|-----------------------|-----------------|
-| Peak short throughput         | 166 tok/s             | 532 tok/s       |
-| Peak short req/s              | 3.3                   | 10.6            |
-| p50 latency at c=32 (short)   | 9.66s                 | 2.69s           |
-| Throughput scaling            | Flat                  | Sub-linear      |
-| Failure rate                  | 0%                    | 0%              |
+| Metric                        | Standard (sequential) | Paged (batched)  |
+|-------------------------------|-----------------------|------------------|
+| Peak short throughput         | 166 tok/s             | 1,840 tok/s      |
+| Peak short req/s              | 3.3                   | 36.8             |
+| p50 latency at c=32 (short)   | 9.66s                 | 1.09s            |
+| Throughput scaling            | Flat                  | Sub-linear       |
+| Failure rate                  | 0%                    | 0%               |
 
 ### Throughput Scaling Behavior
 
@@ -163,11 +166,11 @@ Paged KV cache stores K/V at the per-sequence, per-block level with no batch dim
 
 ### Prompt Length Impact on Batching Gains
 
-| Prompt | Paged Speedup (c=64) | Reason                                                                      |
-|--------|----------------------|-----------------------------------------------------------------------------|
-| Short  | 3.2x                 | Short prefill, GPU mostly idle between tokens → batching fills idle compute |
-| Medium | 2.7x                 | More prefill work, slightly less idle time to fill                          |
-| Long   | 1.4x                 | Long attention over many KV entries each step → already compute-bound       |
+| Prompt | Paged Speedup (c=64) | Reason                                                                                                    |
+|--------|----------------------|-----------------------------------------------------------------------------------------------------------|
+| Short  | 11.1x                | Short prefill, vectorized batch reads/writes maximize GPU parallel compute                                |
+| Medium | 10.5x                | Slightly more prefill work, but vectorized cache eliminates per-sequence overhead                         |
+| Long   | 9.5x                 | More attention computation per decode step, but vectorization closes the gap (was 1.4x pre-vectorization) |
 
 ---
 
@@ -182,6 +185,7 @@ Paged KV cache stores K/V at the per-sequence, per-block level with no batch dim
 | + Paged KV Cache             | 16  | Direct  | 4          | 301 tok/s   | 0.5x (scatter overhead)      |
 | + HTTP Serving (sequential)  | 19  | HTTP    | 1          | 165 tok/s   | —  (new baseline for HTTP)   |
 | + HTTP Serving (batched)     | 19  | HTTP    | 32         | 532 tok/s   | 3.2x vs HTTP sequential      |
+| + Vectorized paged cache     | 20  | HTTP    | 32         | 1,840 tok/s | 11.1x vs HTTP sequential     |
 
 ---
 
@@ -199,42 +203,42 @@ Paged KV cache stores K/V at the per-sequence, per-block level with no batch dim
 
 ### 6.1 Throughput (tok/s)
 
-| Pattern   | Short   | Medium  | Long    |
-|:---------:|:-------:|:-------:|:-------:|
-| **Burst** | **290** | **270** | **172** |
-| Steady    | 286     | 257     | 164     |
-| Poisson   | 277     | 255     | 163     |
+| Pattern   | Short     | Medium    | Long      |
+|:---------:|:---------:|:---------:|:---------:|
+| **Burst** | **2,095** | **2019**  | **1,755** |
+| Steady    | 469       | 470       | 473       |
+| Poisson   | 520       | 515       | 518       |
 
 **Observations:**
 
-- Burst wins on throughput across all prompt lengths — scheduler's batch slots are always full, maximizing GPU parallelism
-- Steady and Poisson are within ~5% of burst — the server processes at roughly the same overall rate regardless of arrival pattern
-- Bottleneck is compute, not scheduling overhead
-- Long prompts reduce throughput by ~1.7x vs short (172 vs 290 tok/s) due to longer attention computation per decode step
+- **Burst throughput is 4.4x higher than steady** (2,095 vs 469 for short) — with vectorized cache operations, full batch slots (4/4 always active) maximize GPU parallelism efficiency
+- Steady and Poisson converge to ~470–520 tok/s across all prompt lengths — partially filled batches at 10 req/s reduce vectorization gains
+- **Long prompts now match short/medium under burst** (1,755 vs 2,092, 1.2x gap) — vectorized `update_cache()` eliminates the per-sequence scatter bottleneck (previously 1.7x gap)
+- Bottleneck under burst is pure compute; under steady/poisson it's arrival rate limiting effective batch utilization
 
 ![Throughput by Arrival Pattern](../../assets/plots/arrival_throughput_bar.png)
 
 ### 6.2 Latency Distribution (seconds)
 
-| Pattern  | Prompt | p50    | p90    | p95    | p99    | Mean   | Std   | Min   | Max    |
-|:--------:|:------:|:------:|:------:|:------:|:------:|:------:|:-----:|:-----:|:------:|
-| Burst    | Short  | 17.21  | 17.23  | 17.23  | 17.23  | 17.21  | 0.01  | 17.17 | 17.24  |
-| Steady   | Short  | 5.41   | 8.28   | 8.51   | 8.91   | 5.33   | 2.38  | 0.44  | 9.01   |
-| Poisson  | Short  | 6.66   | 9.35   | 9.58   | 9.74   | 6.18   | 2.72  | 0.43  | 9.74   |
-| Burst    | Medium | 15.60  | 18.48  | 18.49  | 18.49  | 16.06  | 1.06  | 15.55 | 18.49  |
-| Steady   | Medium | 6.51   | 10.12  | 10.62  | 11.02  | 6.43   | 2.89  | 0.44  | 11.12  |
-| Poisson  | Medium | 7.24   | 10.83  | 10.94  | 11.37  | 7.03   | 3.15  | 0.45  | 11.40  |
-| Burst    | Long   | 28.99  | 29.01  | 29.01  | 29.01  | 28.99  | 0.02  | 28.93 | 29.01  |
-| Steady   | Long   | 12.93  | 20.68  | 21.18  | 21.58  | 12.47  | 5.75  | 0.55  | 21.67  |
-| Poisson  | Long   | 13.46  | 21.85  | 22.01  | 22.43  | 12.94  | 6.22  | 0.55  | 22.47  |
+| Pattern  | Prompt | p50   | p90   | p95   | p99   | Mean  | Std  | Min  | Max   |
+|:--------:|:------:|:-----:|:-----:|:-----:|:-----:|:-----:|:----:|:----:|:-----:|
+| Burst    | Short  | 2.35  | 2.37  | 2.37  | 2.37  | 1.84  | 0.76 | 0.71 | 2.37  |
+| Steady   | Short  | 0.72  | 0.91  | 0.93  | 0.95  | 0.72  | 0.14 | 0.45 | 0.96  |
+| Poisson  | Short  | 0.74  | 0.93  | 0.95  | 0.97  | 0.74  | 0.15 | 0.46 | 1.01  |
+| Burst    | Medium | 2.97  | 2.99  | 2.99  | 2.99  | 2.95  | 0.23 | 0.65 | 2.99  |
+| Steady   | Medium | 0.73  | 0.92  | 0.94  | 0.96  | 0.72  | 0.14 | 0.46 | 0.96  |
+| Poisson  | Medium | 0.75  | 0.93  | 0.96  | 1.00  | 0.75  | 0.14 | 0.46 | 1.00  |
+| Burst    | Long   | 2.84  | 2.86  | 2.86  | 2.86  | 2.67  | 0.59 | 0.67 | 2.86  |
+| Steady   | Long   | 0.80  | 1.00  | 1.01  | 1.02  | 0.79  | 0.15 | 0.47 | 1.02  |
+| Poisson  | Long   | 0.79  | 0.98  | 1.01  | 1.05  | 0.79  | 0.15 | 0.46 | 1.06  |
 
 **Observations:**
 
-- **Burst has very tight latency for short and long prompts (std ≈ 0.01-0.02s)** — all requests queue at t=0 and drain together. Medium burst shows more spread (std=1.06s), likely because the longer prefill phase creates per-batch timing variation across the ~25 batch rounds.
-- **Burst p50 ≈ wall time** — every request experiences the full queue drain time (~17s short, ~29s long)
-- **Steady/Poisson have wide spread** — early requests finish fast (min ≈ 0.44s), later ones queue behind earlier batches (max ≈ 9-22s)
-- **Steady p50 is 3.2x lower** than burst for short prompts (5.41s vs 17.21s) — spreading arrivals lets the first ~half of requests process before the queue builds up
-- Long prompt latency is ~2x of short across all patterns
+- **Burst latency collapsed from ~17s to ~2.4s (short)** — vectorized batch processing drains the 100-request queue 7x faster
+- **Burst has tight latency spread** (std ≈ 0.23–0.76s) — all requests queue at t=0 and drain rapidly together
+- **Burst p50 ≈ wall time** — all requests experience similar total time (~2.4s short, ~2.9s medium/long)
+- **Steady/Poisson have sub-second p50** (0.72–0.80s) — at 10 req/s, most requests process immediately without queuing
+- **Long prompt burst latency is comparable to short** (2.84s vs 2.35s) — vectorized cache operations eliminate the long-prompt penalty (previously 29s vs 17s)
 
 ![Latency by Arrival Pattern](../../assets/plots/arrival_latency_box.png)
 
@@ -242,17 +246,17 @@ Paged KV cache stores K/V at the per-sequence, per-block level with no batch dim
 
 | Pattern  | Prompt | Total | Failed | Wall Time (s) | req/s |
 |:--------:|:------:|:-----:|:------:|:-------------:|:-----:|
-| Burst    | Short  | 100   | 0      | 17.24         | 5.80  |
-| Steady   | Short  | 100   | 0      | 17.48         | 5.72  |
-| Poisson  | Short  | 100   | 0      | 18.07         | 5.53  |
-| Burst    | Medium | 100   | 0      | 18.52         | 5.40  |
-| Steady   | Medium | 100   | 0      | 19.49         | 5.13  |
-| Poisson  | Medium | 100   | 0      | 19.60         | 5.10  |
-| Burst    | Long   | 100   | 0      | 29.02         | 3.45  |
-| Steady   | Long   | 100   | 0      | 30.55         | 3.27  |
-| Poisson  | Long   | 100   | 0      | 30.66         | 3.26  |
+| Burst    | Short  | 100   | 0      | 2.39          | 41.83 |
+| Steady   | Short  | 100   | 0      | 10.57         | 9.46  |
+| Poisson  | Short  | 100   | 0      | 9.73          | 10.28 |
+| Burst    | Medium | 100   | 0      | 3.00          | 33.33 |
+| Steady   | Medium | 100   | 0      | 10.60         | 9.43  |
+| Poisson  | Medium | 100   | 0      | 9.70          | 10.31 |
+| Burst    | Long   | 100   | 0      | 2.87          | 34.83 |
+| Steady   | Long   | 100   | 0      | 10.61         | 9.43  |
+| Poisson  | Long   | 100   | 0      | 9.64          | 10.38 |
 
-**Zero failures across all 900 requests (3 patterns × 3 prompts × 100 requests).** The scheduler + paged cache absorbs a full 100-request queue without dropping, timing out, or OOM-ing. Wall time is dominated by compute — arrival pattern adds only 5-10% overhead from inter-arrival delays.
+**Zero failures across all 900 requests (3 patterns × 3 prompts × 100 requests).** Burst wall time dropped from ~17–29s to ~2.4–3.0s (7–10x faster queue drain). Steady/Poisson wall times are dominated by inter-arrival delays (~10s), not compute. The scheduler + paged cache absorbs a full 100-request burst without dropping, timing out, or OOM-ing.
 
 ---
 
@@ -310,17 +314,18 @@ Monitored via `pynvml` at 0.25s intervals during each arrival pattern run.
 
 ### Arrival Pattern Impact
 
-| Metric                    | Burst          | Steady         | Poisson        |
-|---------------------------|----------------|----------------|----------------|
-| Best for throughput?      | **Yes** (+5%)  | Close second   | Close third    |
-| Best for latency?         | No (worst p50) | **Yes** (best) | Middle         |
-| Realistic traffic model?  | No (DDoS-like) | No (synthetic) | **Yes** (web)  |
-| Backpressure failures?    | 0              | 0              | 0              |
+| Metric                    | Burst                      | Steady         | Poisson         |
+|---------------------------|----------------------------|----------------|-----------------|
+| Best for throughput?      | **Yes** (4.4x over steady) | No             | Close to steady |
+| Best for latency?         | No (highest p50)           | **Yes** (best) | Middle          |
+| Realistic traffic model?  | No (DDoS-like)             | No (synthetic) | **Yes** (web)   |
+| Backpressure failures?    | 0                          | 0              | 0               |
 
 ### Key Findings
 
-1. **Arrival pattern affects latency distribution, not aggregate throughput** — all three patterns produce ~290 tok/s (short), differing by <5%
-2. **Burst maximizes queue depth** — all 100 requests compete for 4 batch slots simultaneously, creating maximum backpressure. Every request experiences full queue drain latency
-3. **Steady/Poisson spread latency** — first requests process immediately (min ≈ 0.44s), creating a wide latency distribution that better reflects real user experience
-4. **GPU is massively under-utilized** — 21-26% compute, 3% memory. A100 is designed for models 100x larger than GPT-2 124M
-5. **Zero failures under all conditions** — server handles 100 simultaneous requests without errors, timeouts, or OOM
+1. **Vectorized batching creates a burst advantage** — burst (2,092 tok/s short) is **4.4x higher** than steady (473 tok/s). With all batch slots always full, vectorized cache operations achieve maximum GPU parallelism. Pre-vectorization, burst and steady were within 5%
+2. **Burst completes 100 requests in 2–3 seconds** (was 17–29s) — vectorized `update_cache()` reduces per-step overhead, draining the queue 7–10x faster
+3. **Long prompts now match short/medium under burst** — 1,742 vs 2,092 tok/s (1.2x gap, was 1.7x). Vectorization eliminates per-sequence scatter cost that previously penalized longer KV reads
+4. **Steady/Poisson spread latency while maintaining sub-second p50** — first requests process immediately (min ≈ 0.45s), later ones queue (max ≈ 1.0s), creating a realistic user experience vs burst's uniform ~2.4s
+5. **GPU is massively under-utilized** — 21-26% compute, 3% memory. A100 is designed for models 100x larger than GPT-2 124M
+6. **Zero failures under all conditions** — server handles 100 simultaneous requests without errors, timeouts, or OOM

@@ -1,5 +1,4 @@
 import torch
-from typing import Tuple
 
 class ContinuousKVCache:
     def __init__(self,
@@ -71,7 +70,7 @@ class ContinuousKVCache:
                      layer_idx: int,
                      k: torch.Tensor,
                      v: torch.Tensor
-        ) -> Tuple[torch.Tensor, torch.Tensor]:
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         
         '''
         Description:
@@ -83,7 +82,7 @@ class ContinuousKVCache:
             k (torch.Tensor): The new key tensor to be added to the cache, with shape (batch_size, n_head, T_new, head_dim).
             v (torch.Tensor): The new value tensor to be added to the cache, with shape (batch_size, n_head, T_new, head_dim).
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: A tuple containing the updated key and value caches for the specified layer, 
+            tuple[torch.Tensor, torch.Tensor]: A tuple containing the updated key and value caches for the specified layer, 
             with shapes (batch_size, n_head, max_seq_len, head_dim), where max_seq_len is the maximum sequence length after the update.
         '''
         

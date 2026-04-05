@@ -6,6 +6,6 @@ PYTHONPATH=. python benchmarks/load/load_test.py --concurrency 1 4 8 16 32 64 12
 PYTHONPATH=. python benchmarks/load/load_test.py --concurrency 1 4 8 16 32 64 128 --prompt medium --out benchmarks/load/paged_medium.json
 PYTHONPATH=. python benchmarks/load/load_test.py --concurrency 1 4 8 16 32 64 128 --prompt long --out benchmarks/load/paged_long.json
 
-PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt short  --device_id 1 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_short.json
-PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt medium --device_id 1 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_medium.json
-PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt long   --device_id 1 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_long.json
+PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt short  --device_id 0 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_short.json
+PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt medium --device_id 0 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_medium.json
+PYTHONPATH=. python benchmarks/load/load_v.py --num_requests 100 --prompt long   --device_id 0 --steady_interval 0.1 --poisson_rate 10.0 --out benchmarks/load/backpressure_long.json

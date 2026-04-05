@@ -1,22 +1,16 @@
 import torch
-from typing import Tuple
 
 from .sampler import greedy_sampler
-
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 def generator(model: object, 
               token_ids: torch.Tensor,
               device: str,
-              max_tokens: int = 50, 
+              max_tokens: int | list[int] = 50 , 
               eos_token_id: int = 50256,
               padding_mask: torch.Tensor = None,
               sampling_method: str = 'greedy',
               kv_cache: object = None,
-    ) -> Tuple[torch.Tensor, int, str]:
+    ) -> tuple[torch.Tensor, int, str]:
     
     """
     Generate tokens autoregressively using greedy sampling.
@@ -43,12 +37,12 @@ def generator(model: object,
             [batch_size, sequence_length, vocab_size].
         token_ids (torch.Tensor): Input token IDs.
         device (str): Target device (e.g., "cpu", "cuda", "cuda:0").
-        max_tokens (int): Maximum number of new tokens to generate.
+        max_tokens (int or list[int]): Maximum tokens to generate. If a list is provided, it should have length equal to batch_size, specifying max tokens for each sequence.
         eos_token_id (int): End-of-sequence token ID.
         sampling_method (str): Sampling strategy. Currently supports "greedy".
 
     Returns:
-        Tuple[torch.Tensor, int, str]: A tuple containing:
+        tuple[torch.Tensor, int, str]: A tuple containing:
             - Generated token IDs (same shape as input).
             - Number of tokens generated.
             - Stop reason (e.g., "Generated EOS token", "Reached max_tokens limit").
@@ -71,7 +65,10 @@ def generator(model: object,
     if token_ids.ndim == 2 and token_ids.size(0) == 0:
         raise ValueError("token_ids cannot have zero batch size")
     
-    if max_tokens <= 0:
+    if isinstance(max_tokens, list):
+        if any(m < 0 for m in max_tokens):
+            raise ValueError("All values in max_tokens list must be non-negative integers")
+    elif max_tokens <= 0:
         raise ValueError("max_tokens must be a positive integer")
     
     if sampling_method not in ('greedy',):
@@ -92,7 +89,7 @@ def generator(model: object,
             eos_bool = torch.zeros(token_ids.size(0), dtype=torch.bool, device=device) # Track which sequences have generated EOS.
             token_count = torch.zeros(token_ids.size(0), dtype=torch.long, device=device) # Track token counts for each sequence.
             stop_reason = [""]*token_ids.size(0) # Track stop reasons for each sequence.
-
+            max_tokens_t = torch.tensor(max_tokens, dtype=torch.long, device=device) if isinstance(max_tokens, list) else torch.full((token_ids.size(0),), max_tokens, dtype=torch.long, device=device)
             
         input_ids = token_ids # Keep original input for final output concatenation.
         while True:
@@ -148,10 +145,10 @@ def generator(model: object,
                     if stop_reason[i] == "":
                         if index[i]:
                             stop_reason[i] = "Sequences generated EOS token."
-                        elif token_count[i] >= max_tokens :
-                            stop_reason[i] = f"Reached max_tokens limit of {max_tokens}."
+                        elif token_count[i] >= max_tokens_t[i] :
+                            stop_reason[i] = f"Reached max_tokens limit of {max_tokens_t[i].item()}."
                 
-                if (eos_bool | (token_count >= max_tokens)).all():
+                if (eos_bool | (token_count >= max_tokens_t)).all():
                     break  
                 
     if was_1d:

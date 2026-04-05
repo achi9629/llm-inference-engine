@@ -12,7 +12,6 @@ Cache shape per layer: (num_blocks, n_heads, block_size, head_dim)
 '''
 
 import torch
-from typing import List, Tuple
 
 class PagedKVCache:
     def __init__(self,
@@ -83,8 +82,8 @@ class PagedKVCache:
         
     def write(self,
               layer_idx: int,
-              block_id: int,
-              offset: int,
+              block_id: int | list[int],
+              offset: int | list[int],
               k: torch.Tensor,
               v: torch.Tensor
         ) -> None:
@@ -96,8 +95,8 @@ class PagedKVCache:
             key and value projections.
         Args:
             layer_idx (int): The transformer layer index.
-            block_id (int): The physical block ID (from BlockTable).
-            offset (int): The position within the block (token_pos % block_size).
+            block_id (int | list[int]): The physical block ID(s) to write into.
+            offset (int | list[int]): The token position(s) within the block(s) to write to.
             k (torch.Tensor): Key tensor, shape (n_heads, head_dim).
             v (torch.Tensor): Value tensor, shape (n_heads, head_dim).
         Returns:
@@ -109,31 +108,66 @@ class PagedKVCache:
         
     def read(self,
              layer_idx: int,
-             block_ids: List[int],
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+             block_ids: list[int] | list[list[int]],
+             max_blocks: int = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         
         '''
         Description:
-            Gathers K/V data from multiple scattered blocks and concatenates them
-            into contiguous tensors. Used during attention to reconstruct a
-            sequence's full K/V history from its block list.
+            Reads and concatenates K/V blocks for the specified block IDs. Supports both single sequence (list of block IDs) 
+            and batched (list of list of block IDs) modes. For batched mode, shorter sequences are padded with block ID 0, 
+            and the caller is responsible for slicing away the padded positions.
         Args:
             layer_idx (int): The transformer layer index.
-            block_ids (List[int]): Ordered list of physical block IDs for a sequence.
+            block_ids (list[int] | list[list[int]]): Block ID(s) to read. Can be a list of ints for single sequence or a 
+            list of list of ints for batched sequences.
+            max_blocks (int, optional): Maximum number of blocks per sequence for batched mode. Required if block_ids is a 
+            list of list of ints. Used for padding shorter sequences.
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: Concatenated K and V tensors,
-                each with shape (1, n_heads, len(block_ids) * block_size, head_dim).
+            tuple[torch.Tensor, torch.Tensor]: Tuple of (k_cache, v_cache) tensors with shape (B, n_heads, total_tokens, head_dim) 
+            for batched mode or (1, n_heads, total_tokens, head_dim) for single sequence mode, where total_tokens = len(block_ids) * block_size 
+            for single sequence or max_blocks * block_size for batched mode
         '''
         
-        k_cache = torch.cat([self.k_cache[layer_idx][block_id, :, :, : ] 
-                             for block_id in block_ids], dim=1).unsqueeze(0)
-        v_cache = torch.cat([self.v_cache[layer_idx][block_id, :, :, : ] 
-                             for block_id in block_ids], dim=1).unsqueeze(0)
+        # Single sequence: block_ids = [5, 2, 7]
+        if isinstance(block_ids[0], int):
+            
+            block_ids_t = torch.tensor(block_ids, dtype=torch.long, device=self.device)
+            
+            # (len(block_ids), n_heads, block_size, head_dim)
+            k_blocks = self.k_cache[layer_idx].index_select(0, block_ids_t)
+            v_blocks = self.v_cache[layer_idx].index_select(0, block_ids_t)
+        
+            # (1, n_heads, len(block_ids)*block_size, head_dim)
+            k_cache = k_blocks.permute(1, 0, 2, 3).contiguous().view(self.n_heads, -1, self.head_dim).unsqueeze(0)
+            v_cache = v_blocks.permute(1, 0, 2, 3).contiguous().view(self.n_heads, -1, self.head_dim).unsqueeze(0)
+            
+            return k_cache, v_cache
+        
+        # Batched: block_ids = [[5, 2, 7], [3, 1], [4, 6, 0, 8]]
+        B = len(block_ids)
+        # Pad shorter block ID lists with 0 (reads from block 0 which may hold
+        # unrelated data, but these positions are sliced away by the caller).
+        padded = [ids + [0] * (max_blocks - len(ids)) for ids in block_ids]
+        flat_ids = torch.tensor([bid for seq in padded for bid in seq], 
+                                dtype=torch.long, device=self.device)
+        
+        # (B*max_blocks, n_heads, block_size, head_dim)
+        k_gathered = self.k_cache[layer_idx].index_select(0, flat_ids)
+        v_gathered = self.v_cache[layer_idx].index_select(0, flat_ids)
+        
+        # Reshape to (B, max_blocks, n_heads, block_size, head_dim)
+        k_gathered = k_gathered.view(B, max_blocks, self.n_heads, self.block_size, self.head_dim)
+        v_gathered = v_gathered.view(B, max_blocks, self.n_heads, self.block_size, self.head_dim)
+        
+        # (B, n_heads, max_blocks*block_size, head_dim)
+        k_cache = k_gathered.permute(0, 2, 1, 3, 4).contiguous().view(B, self.n_heads, -1, self.head_dim)
+        v_cache = v_gathered.permute(0, 2, 1, 3, 4).contiguous().view(B, self.n_heads, -1, self.head_dim)
         
         return k_cache, v_cache
-    
+
     def reset_blocks(self,
-                     block_ids: List[int]
+                     block_ids: list[int]
         ) -> None:
         
         '''
@@ -142,12 +176,17 @@ class PagedKVCache:
             sequence finishes and its blocks are returned to the allocator,
             ensuring no stale data remains.
         Args:
-            block_ids (List[int]): List of block IDs to zero out.
+            block_ids (list[int]): List of block IDs to zero out.
         Returns:
             None
         '''
         
-        for block_id in block_ids:
-            for layer_idx in range(self.n_layers):
-                self.k_cache[layer_idx][block_id, :, :, : ] = 0
-                self.v_cache[layer_idx][block_id, :, :, : ] = 0
+        block_ids_t = torch.tensor(block_ids, dtype=torch.long, device=self.device)
+        for layer_idx in range(self.n_layers):
+            self.k_cache[layer_idx][block_ids_t] = 0
+            self.v_cache[layer_idx][block_ids_t] = 0
+        
+        # for block_id in block_ids:
+        # for layer_idx in range(self.n_layers):
+        #     self.k_cache[layer_idx][block_id, :, :, : ] = 0
+        #     self.v_cache[layer_idx][block_id, :, :, : ] = 0

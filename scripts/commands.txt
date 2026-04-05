@@ -1,3 +1,10 @@
-PYTHONPATH=. python scripts/run_server.py --device 0 --cache_type standard --max_batch_size 32
-PYTHONPATH=. python scripts/run_server.py --device 0 --cache_type paged --max_batch_size 32 --async_mode
-PYTHONPATH=. python scripts/run_server.py --device 1 --cache_type paged --max_batch_size 4 --async_mode
+PYTHONPATH=. python scripts/run_server.py --device 0 --cache_type standard
+PYTHONPATH=. python scripts/run_server.py --device 0 --cache_type paged --async_mode
+PYTHONPATH=. python scripts/run_server.py --device 1 --cache_type paged --async_mode
+
+PYTHONPATH=. python scripts/run_benchmark.py
+PYTHONPATH=. python scripts/run_benchmark.py --suite latency
+PYTHONPATH=. python scripts/run_benchmark.py --suite throughput
+PYTHONPATH=. python scripts/run_benchmark.py --suite profiler
+PYTHONPATH=. python scripts/run_benchmark.py --suite load
+PYTHONPATH=. python scripts/run_benchmark.py --list

@@ -168,13 +168,12 @@
 
 ### Day 20 - Refinement (Mar 28)
 
-- ⬜ Implement `scripts/run_benchmark.py` (run all benchmarks end-to-end)
-- ⬜ Collect final benchmark numbers across all configurations
-- ⬜ Write `tests/test_inference.py`
-- ⬜ Fix edge cases and bugs
-- ⬜ Optimize batching logic
-- ⬜ Improve scheduler decisions
-- ⬜ Code cleanup and consistency pass
+- ✅ Implement `scripts/run_benchmark.py` (run all benchmarks end-to-end)
+- ✅ Collect final benchmark numbers across all configurations
+- ✅ Write `tests/test_inference.py`
+- ✅ Fix edge cases and bugs
+- ✅ Optimize batching logic
+- ✅ Code cleanup and consistency pass
 
 ### Day 21 - Documentation + Portfolio (Mar 29)
 
@@ -211,9 +210,10 @@
 
 ## Future Extensions (Post-Project)
 
-- ⬜ Priority scheduling (swap FIFO deque for heapq in RequestQueue)
 - ⬜ Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
 - ⬜ Add LLaMA 7B/8B support (RoPE, GQA, RMSNorm, SwiGLU)
+- ⬜ Priority scheduling (swap FIFO deque for heapq in RequestQueue)
+- ⬜ Memory-aware scheduler admission (block budget check before filling slots — needed when KV cache per sequence is large enough to cause MemoryError)
 - ⬜ Add Mistral model support
 - ⬜ Prefix caching (reuse KV blocks across requests sharing system prompt)
 - ⬜ Roofline analysis doc (compute vs memory-bandwidth bound at each optimization stage)

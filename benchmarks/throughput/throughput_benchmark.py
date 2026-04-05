@@ -81,7 +81,6 @@ def run_throughput_benchmark(is_kv_cache_enabled: bool = False) -> None:
             f"{r['gpu_snapshot']['memory_utilization_percent']:<15.1f} {r['MFU_percent']:<10.2f}"
         )
         logger.info(row)
-        
 
 def run_batch_throughput_benchmark(is_kv_cache_enabled: bool = True) -> None:
     

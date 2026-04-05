@@ -10,7 +10,6 @@ and metadata (state, timestamps) needed by the scheduler and server.
 """
 
 from time import time
-from typing import List
 
 class RequestState:
     PENDING = "pending"
@@ -22,7 +21,7 @@ class Request:
     def __init__(self,
                  request_id: str,
                  prompt: str,
-                 token_ids: List[int],
+                 token_ids: list[int],
                  max_tokens: int,
                  ) -> None:
         
@@ -32,7 +31,7 @@ class Request:
         Args:
             request_id (str): Unique identifier for the request.
             prompt (str): The original text prompt for the inference.
-            token_ids (List[int]): List of token IDs representing the input prompt.
+            token_ids (list[int]): List of token IDs representing the input prompt.
             max_tokens (int): Maximum number of tokens to generate in response.
         Returns:
             None

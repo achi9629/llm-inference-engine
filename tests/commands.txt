@@ -35,7 +35,7 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_schedul
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_request_handler.py -v --log-cli-level=INFO
 
 # test_router
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_router.py -k "test_async_generate_valid_request" -v --log-cli-level=INFO
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_router.py -v --log-cli-level=INFO
 
 # test_api_server
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_api_server.py -v --log-cli-level=INFO

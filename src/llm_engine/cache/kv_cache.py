@@ -1,5 +1,4 @@
 import torch
-from typing import Tuple
 
 class KVCache:
     def __init__(self,
@@ -66,7 +65,7 @@ class KVCache:
                      layer_idx: int, 
                      k: torch.Tensor, 
                      v: torch.Tensor
-        ) -> Tuple[torch.Tensor, torch.Tensor]:
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         
         '''
         Description:
@@ -80,7 +79,7 @@ class KVCache:
             v (torch.Tensor): The new value tensor to be added to the cache, with shape (batch_size, n_head, T_new, head_dim).
         
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: A tuple containing the updated key and value tensors for the specified layer, 
+            tuple[torch.Tensor, torch.Tensor]: A tuple containing the updated key and value tensors for the specified layer, 
             with shapes (batch_size, n_head, T_total, head_dim), where T_total is the total sequence length after the update.
         '''
         

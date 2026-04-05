@@ -37,3 +37,13 @@ def load_asset_paths(model_cfg_path: str = "configs/model_config.yaml") -> dict[
     
     return config, model_cfg
 
+def load_scheduler_config(path: str = "configs/scheduler_config.yaml") -> dict:
+    repo_root = Path(__file__).resolve().parents[3]
+    with open(repo_root / path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+def load_server_config(path: str = "configs/server_config.yaml") -> dict:
+    repo_root = Path(__file__).resolve().parents[3]
+    with open(repo_root / path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+

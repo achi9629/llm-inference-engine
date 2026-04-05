@@ -14,7 +14,10 @@ For paged mode, generate() manages the full block lifecycle per call:
     reset_blocks → free_sequence
 '''
 
-import torch, time, secrets, math
+import torch
+import time
+import secrets
+import math
 import torch.nn as nn
 
 from .generator import generator
@@ -75,8 +78,6 @@ class InferenceEngine:
         # model, device and setting model to evaluation mode
         self.model = model
         self.device = device
-        self.model = self.model.to(self.device)
-        self.model.eval()
         
         # Initialize the tokenizer, 
         # set the maximum number of tokens, 
@@ -93,6 +94,9 @@ class InferenceEngine:
         # Validate model
         if not isinstance(self.model, nn.Module):
             raise TypeError("Model must be an instance of the model class.")
+        
+        self.model = self.model.to(self.device)
+        self.model.eval()
         
         # Validate that the tokenizer has the required methods
         if self.tokenizer is None:
@@ -160,8 +164,7 @@ class InferenceEngine:
         '''
         
         return self.tokenizer.encode(input_text, 
-                                     return_tensor = True
-                                    )
+                                     return_tensor = True)
     
     def decode(self,
                token_ids: torch.Tensor
@@ -180,7 +183,7 @@ class InferenceEngine:
     
     def generate(self,
                  input_text: str | list[str],
-                 max_tokens: int = 50, 
+                 max_tokens: int | list[int] = 50 , 
         ) -> dict[str, object] | list[dict[str, object]]:
         
         '''
@@ -197,7 +200,7 @@ class InferenceEngine:
 
         Args:
             input_text (str | list[str]): The input prompt(s) for text generation.
-            max_tokens (int): Maximum number of new tokens to generate. Default: 50.
+            max_tokens (int | list[int]): The maximum number of tokens to generate for each input. Can be a single int or a list of ints matching the batch size.
 
         Returns:
             dict[str, object] | list[dict[str, object]]:
@@ -259,12 +262,9 @@ class InferenceEngine:
                 self.block_table.free_sequence(seq_id = seq_id)
             
         decoded_text = self.decode(predicted_token_ids)
-        # TODO: Normalize single-input decode output.
-        # If input_text is a single string but decoded_text is ['...'] (one-item list),
-        # convert it to a plain string before building the response.
-        # Example:
-        # if isinstance(input_text, str) and isinstance(decoded_text, list) and len(decoded_text) == 1:
-        #     decoded_text = decoded_text[0]
+
+        if isinstance(input_text, str) and isinstance(decoded_text, list) and len(decoded_text) == 1:
+            decoded_text = decoded_text[0]
         
         if isinstance(input_text, str):
             return {
@@ -272,7 +272,7 @@ class InferenceEngine:
                 "generated_text": decoded_text,
                 "sampling_method": self.sampling_method,
                 "token_count": token_count.item() if isinstance(token_count, torch.Tensor) else token_count, # Convert single-token count tensor to int.
-                "stop_reason": stop_reason[0]
+                "stop_reason": stop_reason[0] if isinstance(stop_reason, list) else stop_reason # Assuming stop_reason is a list with one reason for single input.
             }
         elif isinstance(input_text, list) and isinstance(decoded_text, list) and len(input_text) == len(decoded_text):
             return [

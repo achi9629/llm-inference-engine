@@ -1,2 +1,1 @@
-# latency_benchmark
 PYTHONPATH=. python -W ignore::DeprecationWarning examples/simple_generation.py

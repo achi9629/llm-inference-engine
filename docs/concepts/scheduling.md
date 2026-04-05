@@ -148,7 +148,7 @@ test_scheduler.py simulates the full flow:
 
 ---
 
-# Day 13: Continuous Batching + Per-Sequence KV Cache
+## Day 13: Continuous Batching + Per-Sequence KV Cache
 
 ## Why Continuous Batching?
 
@@ -246,7 +246,7 @@ After reset_slot(0):
   slot 1: seq_len=30, cache UNTOUCHED (still running)
 ```
 
-## Test Verification
+## Test Verifications
 
 ### test_scheduler.py (2 tests)
 
