@@ -177,12 +177,12 @@
 
 ### Day 21 - Documentation + Portfolio (Mar 29)
 
-- ⬜ Write `docs/concepts/architecture.md` (system architecture + diagrams)
-- ⬜ Write `docs/concepts/design_decisions.md` (key design choices and tradeoffs)
-- ⬜ Write `docs/concepts/kv_cache.md` (KV cache mechanism explanation)
-- ⬜ Update `README.md` (overview, architecture, features, benchmarks, how to run, future work)
-- ⬜ Include benchmark results and performance charts in docs
-- ⬜ Final GitHub-ready cleanup
+- ✅ Write `docs/concepts/architecture.md` (system architecture + diagrams)
+- ✅ Write `docs/concepts/design_decisions.md` (key design choices and tradeoffs)
+- ✅ Write `docs/concepts/kv_cache.md` (KV cache mechanism explanation)
+- ✅ Update `README.md` (overview, architecture, features, benchmarks, how to run, future work)
+- ✅ Include benchmark results and performance charts in docs
+- ✅ Final GitHub-ready cleanup
 
 ---
 
@@ -201,22 +201,25 @@
 
 ## Final Deliverables
 
-- ⬜ Working end-to-end inference server
-- ⬜ KV cache with paged memory management
-- ⬜ Continuous batching scheduler
-- ⬜ Benchmark suite with performance progression
-- ⬜ Complete documentation with architecture diagrams
-- ⬜ Clean, well-structured codebase on GitHub
+- ✅ Working end-to-end inference server
+- ✅ KV cache with paged memory management
+- ✅ Continuous batching scheduler
+- ✅ Benchmark suite with performance progression
+- ✅ Complete documentation with architecture diagrams
+- ✅ Clean, well-structured codebase on GitHub
 
 ## Future Extensions (Post-Project)
 
-- ⬜ Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
 - ⬜ Add LLaMA 7B/8B support (RoPE, GQA, RMSNorm, SwiGLU)
-- ⬜ Priority scheduling (swap FIFO deque for heapq in RequestQueue)
-- ⬜ Memory-aware scheduler admission (block budget check before filling slots — needed when KV cache per sequence is large enough to cause MemoryError)
-- ⬜ Add Mistral model support
+- ⬜ Scheduler-driven decode loop (token-level eviction/fill using ContinuousBatchingScheduler + ContinuousKVCache, needed because chat models produce variable-length responses with natural EOS)
+- ⬜ Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
 - ⬜ Prefix caching (reuse KV blocks across requests sharing system prompt)
-- ⬜ Roofline analysis doc (compute vs memory-bandwidth bound at each optimization stage)
 - ⬜ Benchmark against vLLM on matched workloads
+- ⬜ Custom Triton FlashAttention kernel (fused QK^T → softmax → V, tiled, online softmax, O(N) memory)
+- ⬜ Custom Triton PagedAttention kernel (read directly from scattered KV blocks — eliminates gather step)
+- ⬜ Memory-aware scheduler admission (block budget check before filling slots — needed when KV cache per sequence is large enough to cause MemoryError)
+- ⬜ Priority scheduling (swap FIFO deque for heapq in RequestQueue)
+- ⬜ Roofline analysis doc (compute vs memory-bandwidth bound at each optimization stage)
 - ⬜ GitHub Actions CI workflow (mark GPU tests `@pytest.mark.gpu`, run non-GPU tests in CI)
 - ⬜ Guided decoding / structured output (JSON schema-constrained sampling via logit masking)
+- ⬜ Add Mistral model support
