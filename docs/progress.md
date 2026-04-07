@@ -184,7 +184,75 @@
 - ✅ Include benchmark results and performance charts in docs
 - ✅ Final GitHub-ready cleanup
 
+## Week 4: LLaMA — Model Architecture (Apr 7-13)
+
+### Day 22 - RMSNorm + RoPE (Apr 7)
+
+- ✅ Implement `src/llm_engine/model/LLaMA/rmsnorm.py` (RMSNorm: no mean subtraction, no bias, float32 upcast)
+- ⬜ Implement `src/llm_engine/model/LLaMA/rope.py` (Rotary Position Embeddings: precompute freqs, apply rotation to Q/K)
+
+### Day 23 - SwiGLU + GQA Attention (Apr 8)
+
+- ⬜ Implement `src/llm_engine/model/LLaMA/feedforward.py` (SwiGLU: gate_proj, up_proj, down_proj, no bias)
+- ⬜ Implement `src/llm_engine/model/LLaMA/attention.py` (Grouped Query Attention: n_kv_heads < n_heads, RoPE on Q/K, repeat_kv)
+
+### Day 24 - LLaMA Block + Transformer (Apr 9)
+
+- ⬜ Implement `src/llm_engine/model/LLaMA/block.py` (pre-norm with RMSNorm + GQA + SwiGLU)
+- ⬜ Implement `src/llm_engine/model/LLaMA/transformer.py` (embedding, N blocks, final RMSNorm, untied lm_head)
+
+### Day 25 - Config + Weight Loader (Apr 10)
+
+- ⬜ Create `assets/models/llama/7B/config.json` (vocab_size, n_layers, n_heads, n_kv_heads, d_model, d_ff, rope_theta, etc.)
+- ⬜ Create `assets/models/llama/7B/manifest.json` (model_family, weights_file, tokenizer type)
+- ⬜ Update `src/llm_engine/utils/weight_loader.py` (map HuggingFace LLaMA checkpoint keys to our module names)
+
+### Day 26 - Tokenizer + Model Dispatch (Apr 11)
+
+- ⬜ Update `src/llm_engine/tokenizer/tokenizer.py` (support SentencePiece / LlamaTokenizer based on manifest tokenizer type)
+- ⬜ Update `src/llm_engine/model/__init__.py` (add LLaMA to `load_model()` dispatch)
+- ⬜ Update `src/llm_engine/inference/inference_engine.py` (use `n_kv_heads` for KV cache dimensions when GQA)
+
+### Day 27 - Smoke Test + Weight Debugging (Apr 12)
+
+- ⬜ Load LLaMA 7B weights, run forward pass
+- ⬜ Compare logits against HuggingFace `LlamaForCausalLM` reference
+- ⬜ Fix weight mapping mismatches
+
+### Day 28 - Generation Validation (Apr 13)
+
+- ⬜ Validate end-to-end text generation (coherent output)
+- ⬜ Test with paged KV cache (GQA dimensions: n_kv_heads, not n_heads)
+- ⬜ Write LLaMA-specific unit tests
+
+## Week 5: LLaMA — Benchmarks + Documentation (Apr 14-20)
+
+### Day 29 - LLaMA Benchmarks (Apr 14)
+
+- ⬜ Latency benchmark (prompt lengths: 64, 256, 512)
+- ⬜ Throughput benchmark (single request, batched)
+- ⬜ Memory benchmark (standard vs paged KV cache with GQA)
+
+### Day 30 - LLaMA Load Test (Apr 15)
+
+- ⬜ Concurrent load test (1–64 users, paged cache)
+- ⬜ Compare LLaMA vs GPT-2 serving throughput
+- ⬜ Document load test results
+
+### Day 31 - Documentation + Cleanup (Apr 16)
+
+- ⬜ Update `docs/concepts/architecture.md` (add LLaMA to component diagram)
+- ⬜ Write LLaMA concept docs (GQA, RoPE, SwiGLU)
+- ⬜ Update `README.md` (add LLaMA to features, benchmark results)
+- ⬜ Update `docs/progress.md` — mark LLaMA extension complete
+
+### Day 32-35 - Next Extension (Apr 17-20)
+
+- ⬜ Start next extension (Speculative Decoding or Triton FlashAttention)
+
 ---
+
+
 
 ## Benchmark Checkpoints
 
@@ -210,7 +278,6 @@
 
 ## Future Extensions (Post-Project)
 
-- ⬜ Add LLaMA 7B/8B support (RoPE, GQA, RMSNorm, SwiGLU)
 - ⬜ Scheduler-driven decode loop (token-level eviction/fill using ContinuousBatchingScheduler + ContinuousKVCache, needed because chat models produce variable-length responses with natural EOS)
 - ⬜ Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
 - ⬜ Prefix caching (reuse KV blocks across requests sharing system prompt)

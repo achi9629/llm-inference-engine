@@ -134,6 +134,9 @@ class PagedKVCache:
             
             block_ids_t = torch.tensor(block_ids, dtype=torch.long, device=self.device)
             
+            # index_select is slightly faster than advanced indexing (self.k_cache[layer_idx][block_ids_t])
+            # as it dispatches directly to a dedicated gather kernel, avoiding the
+            # general indexing dispatcher's parsing overhead.
             # (len(block_ids), n_heads, block_size, head_dim)
             k_blocks = self.k_cache[layer_idx].index_select(0, block_ids_t)
             v_blocks = self.v_cache[layer_idx].index_select(0, block_ids_t)
@@ -145,13 +148,27 @@ class PagedKVCache:
             return k_cache, v_cache
         
         # Batched: block_ids = [[5, 2, 7], [3, 1], [4, 6, 0, 8]]
+        # Left-padded bacthing: block_ids = [[0, 5, 2, 7], [0, 0, 3, 1], [4, 6, 0, 8]]
         B = len(block_ids)
+        
+        # With left-padded batching, all sequences have equal token counts,
+        # so all have the same number of blocks — this padding is a no-op.
+        # Kept for generality (e.g., variable-length continuous batching).
         # Pad shorter block ID lists with 0 (reads from block 0 which may hold
         # unrelated data, but these positions are sliced away by the caller).
         padded = [ids + [0] * (max_blocks - len(ids)) for ids in block_ids]
-        flat_ids = torch.tensor([bid for seq in padded for bid in seq], 
-                                dtype=torch.long, device=self.device)
         
+        # torch.tensor(padded) creates a 2D (B, max_blocks) tensor directly,
+        # then flatten()/view(-1) makes it 1D — cleaner than the nested list comprehension.
+        # flatten() works even on non-contiguous tensors (copies if needed),
+        # view(-1) requires contiguous memory (guaranteed here since torch.tensor always returns contiguous).
+        # flat_ids = torch.tensor([bid for seq in padded for bid in seq], 
+        #                         dtype=torch.long, device=self.device)
+        flat_ids = torch.tensor(padded, dtype=torch.long, device=self.device).flatten()
+        
+        # index_select is slightly faster than advanced indexing (self.k_cache[layer_idx][flat_ids])
+        # as it dispatches directly to a dedicated gather kernel, avoiding the
+        # general indexing dispatcher's parsing overhead.
         # (B*max_blocks, n_heads, block_size, head_dim)
         k_gathered = self.k_cache[layer_idx].index_select(0, flat_ids)
         v_gathered = self.v_cache[layer_idx].index_select(0, flat_ids)
@@ -185,8 +202,3 @@ class PagedKVCache:
         for layer_idx in range(self.n_layers):
             self.k_cache[layer_idx][block_ids_t] = 0
             self.v_cache[layer_idx][block_ids_t] = 0
-        
-        # for block_id in block_ids:
-        # for layer_idx in range(self.n_layers):
-        #     self.k_cache[layer_idx][block_id, :, :, : ] = 0
-        #     self.v_cache[layer_idx][block_id, :, :, : ] = 0

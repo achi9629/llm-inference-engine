@@ -127,21 +127,21 @@ Sequences don't own contiguous memory — their K/V data is scattered across blo
 
 ```bash
 ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────────────┐
-│  MemoryAllocator │      │    BlockTable     │      │     PagedKVCache         │
-│                  │      │                   │      │                          │
-│  free_blocks:    │◄────►│  seq_id → [b0,    │─────►│  k_cache[layer][block]   │
-│    deque(0..N)   │      │           b1, b2] │      │  v_cache[layer][block]   │
-│  allocated: set  │      │                   │      │                          │
+│  MemoryAllocator │      │    BlockTable    │      │     PagedKVCache         │
+│                  │      │                  │      │                          │
+│  free_blocks:    │◄────►│  seq_id → [b0,   │─────►│  k_cache[layer][block]   │
+│    deque(0..N)   │      │           b1, b2]│      │  v_cache[layer][block]   │
+│  allocated: set  │      │                  │      │                          │
 └──────────────────┘      └──────────────────┘      └──────────────────────────┘
          │                         │                            │
          └──── allocate/free ──────┘                            │
                                                                 │
                               ┌──────────────────────────┐      │
-                              │   PagedCacheContext       │──────┘
-                              │   (Adapter)               │
-                              │                           │
-                              │   update_cache(l, k, v)   │
-                              │   → write + read + pad    │
+                              │   PagedCacheContext      │──────┘
+                              │   (Adapter)              │
+                              │                          │
+                              │   update_cache(l, k, v)  │
+                              │   → write + read + pad   │
                               └──────────────────────────┘
 ```
 

@@ -27,7 +27,6 @@ __all__ = [
             "generator",
             "load_asset_paths",
             "load_model",
-            "load_weights",
             "GPUMonitor",
             "InferenceProfiler",
             "KVCache",

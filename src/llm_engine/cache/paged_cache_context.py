@@ -127,9 +127,26 @@ class PagedCacheContext:
         # shape: (B, n_heads, max_blocks * block_size, head_dim)
         
         # Slice away trailing block padding — keep only valid tokens
-        max_valid = max(self.seq_lens[i] + T_new for i in range(batch_size))
+        # With Left-padding, seq_lens will be same across the batch, 
+        # so we can just slice to max_valid = max(seq_lens) + T_new
+        # max_valid = max(self.seq_lens[i] + T_new for i in range(batch_size))
+        max_valid = max(self.seq_lens) + T_new
         k_full = k_full[:, :, :max_valid, :]
         v_full = v_full[:, :, :max_valid, :]
+        
+        # NOTE: This assumes left-padded static batching where all seq_lens are identical.
+        # For true iteration-level continuous batching (variable seq_lens), this slice
+        # would keep garbage data for shorter sequences. That would require returning
+        # a per-sequence validity mask: mask[i, :, :, :seq_lens[i]+T_new] = 1,
+        # and the attention layer would need to apply it (score.masked_fill(mask==0, torch.finfo(score.dtype).min)).
+        # This will replace the current padding_mask logic, which is simpler but less efficient due to extra compute on pad tokens.
+        # Current design trades some wasted compute on pad tokens for simpler cache logic.
+        # For Example
+        # 1 = valid token, 0 = garbage from shorter sequence / unfilled block
+        # seq_mask = torch.zeros(batch_size, 1, 1, max_valid, device=k_full.device)
+        # for i in range(batch_size):
+        #     valid = self.seq_lens[i] + T_new
+        #     seq_mask[i, :, :, :valid] = 1
         
         # ── INCREMENT SEQ LENS ────────────────────────────────
         self.increment_seq_len(layer_idx, T_new)

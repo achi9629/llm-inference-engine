@@ -64,3 +64,48 @@ This means standard KVCache **cannot handle dynamic batch sizes** — the exact 
 Standard throughput is flat (~165 tok/s) regardless of concurrency — requests queue and process one at a time. Paged throughput scales with concurrency until GPU compute saturates (~c=64).
 
 **Takeaway:** Standard KV cache is a correct, simple baseline. Paged KV cache is required for dynamic batching in production serving. This is the same fundamental reason why vLLM, TGI, and other production systems use paged/block-level memory management.
+
+## 3. Left-Padded Static Batching vs Variable-Length Continuous Batching
+
+**Problem:** When batching multiple sequences, they may have different lengths. Two approaches exist:
+
+1. **Left-padded static batching (our choice):** Pad all sequences to the longest length with pad token (ID 0) on the left. All sequences have identical `T_new` and `seq_lens`. Padding mask in attention zeros out pad positions.
+2. **Variable-length continuous batching (vLLM approach):** No padding. Each sequence has its own length. New sequences can join mid-generation with different `T_new` (prefill vs decode).
+
+**Our Choice:** Left-padded static batching with uniform `T_new`.
+
+| Aspect                          | Left-Padded (ours)                                  | Variable-Length (vLLM)                                                             |
+|---------------------------------|-----------------------------------------------------|------------------------------------------------------------------------------------|
+| `seq_lens` across batch         | All identical                                       | Different per sequence                                                             |
+| `T_new` per step                | Same for all sequences                              | Mixed (prefill + decode)                                                           |
+| Block-level padding in `read()` | No-op (equal block counts)                          | Active (shorter sequences padded with block 0)                                     |
+| `max_valid` slice               | Trims intra-block waste only                        | Trims to longest; shorter sequences have garbage                                   |
+| Masking                         | `padding_mask` from tokenizer (pad token positions) | Per-sequence validity mask from cache (`seq_lens`-based)                           |
+| Attention kernel                | Standard batched attention                          | Requires variable-length kernel (FlashAttention `cu_seqlens`) or per-sequence mask |
+| `generate()` loop               | Runs full generation, returns all results           | Must expose single-step `decode_step()` for iteration-level scheduling             |
+
+**Why this matters for `PagedCacheContext.update_cache()`:**
+
+With left-padding, the slice `k_full[:, :, :max_valid, :]` is safe because all sequences have the same valid token count. With variable `seq_lens`, this slice would keep garbage data for shorter sequences (unfilled block slots or data from padded block 0), corrupting attention unless a per-sequence mask is applied:
+
+```python
+# Required for variable seq_lens (not currently implemented):
+seq_mask = torch.zeros(B, 1, 1, max_valid, device=k_full.device)
+for i in range(B):
+    seq_mask[i, :, :, :seq_lens[i] + T_new] = 1
+# Attention: score.masked_fill(seq_mask == 0, torch.finfo(score.dtype).min)
+```
+
+**Tradeoffs:**
+
+- Our approach: simpler cache logic, no per-sequence masking from cache, padding mask comes from tokenizer. Wastes compute on pad tokens and cache blocks for pad positions.
+- vLLM approach: zero wasted compute/memory, but requires variable-length attention kernels (FlashAttention/PagedAttention), iteration-level `decode_step()`, and per-sequence mask generation in the cache layer.
+
+**What would need to change for variable-length:**
+
+1. `engine.generate()` → split into single-step `decode_step()` returning after one forward pass
+2. `PagedCacheContext.update_cache()` → return `(k_full, v_full, seq_mask)` instead of `(k_full, v_full)`
+3. Attention layer → use `seq_mask` from cache instead of `padding_mask` from tokenizer
+4. Model forward pass → support ragged `T_new` per sequence (FlashAttention with `cu_seqlens`) or split prefill/decode into separate micro-batches
+
+**Takeaway:** Left-padded static batching is the correct design for our current stack (standard PyTorch attention, `generate()` loop). Variable-length continuous batching is the production-optimal path but requires kernel-level changes (FlashAttention/PagedAttention) that go beyond the current PyTorch-level implementation.
