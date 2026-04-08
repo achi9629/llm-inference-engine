@@ -189,7 +189,7 @@
 ### Day 22 - RMSNorm + RoPE (Apr 7)
 
 - ✅ Implement `src/llm_engine/model/LLaMA/rmsnorm.py` (RMSNorm: no mean subtraction, no bias, float32 upcast)
-- ⬜ Implement `src/llm_engine/model/LLaMA/rope.py` (Rotary Position Embeddings: precompute freqs, apply rotation to Q/K)
+- ✅ Implement `src/llm_engine/model/LLaMA/rope.py` (Rotary Position Embeddings: precompute freqs, apply rotation to Q/K)
 
 ### Day 23 - SwiGLU + GQA Attention (Apr 8)
 
@@ -251,8 +251,6 @@
 - ⬜ Start next extension (Speculative Decoding or Triton FlashAttention)
 
 ---
-
-
 
 ## Benchmark Checkpoints
 
