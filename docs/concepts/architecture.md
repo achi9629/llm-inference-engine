@@ -3,7 +3,7 @@
 End-to-end LLM inference engine built from scratch in PyTorch.
 The engine is **model-agnostic** — the model layer is a pluggable slot behind
 a standard `nn.Module` interface. GPT-2 124M is the current implementation;
-new families (LLaMA, Mistral, …) plug in without touching the layers above it.
+new families (Mistral, Falcon, …) plug in without touching the layers above it.
 
 ---
 
@@ -44,7 +44,7 @@ new families (LLaMA, Mistral, …) plug in without touching the layers above it.
 │  │  GPT-2 124M  (current)                      │        │
 │  │  Embedding → 12× TransformerBlock → LM Head │        │
 │  └─────────────────────────────────────────────┘        │
-│  Future: LLaMA, Mistral — same interface                │
+│  Future: Mistral, Falcon — same interface                │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
@@ -168,7 +168,7 @@ interchangeable from the model's perspective.
 2. Update `load_model()` in `src/llm_engine/model/__init__.py` to
    dispatch on `model_family`.
 3. Add a `configs/model_config.yaml` variant
-   (e.g. `model_family: "llama"`, `model_variant: "7B"`).
+   (e.g. `model_family: "mistral"`, `model_variant: "7B"`).
 4. Place weights under `assets/models/<family>/<variant>/`.
 
 No changes needed to serving, scheduling, inference, or cache layers.

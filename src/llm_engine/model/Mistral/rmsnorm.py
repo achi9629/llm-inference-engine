@@ -4,7 +4,7 @@ import torch.nn as nn
 class RMSNorm(nn.Module):
     def __init__(self, 
                  d_model: int, 
-                 eps : float = 1e-6) -> None:
+                 eps : float = 1e-5) -> None:
         super(RMSNorm, self).__init__()
         
         '''
@@ -15,7 +15,7 @@ class RMSNorm(nn.Module):
             Computes in float32 for numerical stability, then casts back to input dtype.
         Args:
             d_model (int): Hidden dimension size.
-            eps (float): Small constant for numerical stability (default: 1e-6).
+            eps (float): Small constant for numerical stability (default: 1e-5).
         Returns:
             None
         '''

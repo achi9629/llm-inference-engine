@@ -9,7 +9,9 @@ profiler_trace.json
 notebooks/
 .ipynb_checkpoints/
 *.bin
+*.safetensors
 
 # Markdown files
 career_strategy.md
 git_commands.md
+P2_progress.md

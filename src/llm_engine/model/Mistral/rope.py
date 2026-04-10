@@ -1,6 +1,6 @@
 
 """
-Rotary Position Embeddings (RoPE) for LLaMA.
+Rotary Position Embeddings (RoPE) for Mistral.
 
 Encodes position information directly into Q and K vectors before the attention
 dot product. Uses 2D rotation at position-dependent angles so that the Q·K dot
@@ -18,7 +18,7 @@ class RoPE(nn.Module):
     def __init__(self, 
                  dim: int, 
                  max_seq_len: int, 
-                 theta: float = 10000.0
+                 rope_theta: float = 10000.0
         ) -> None:
         super(RoPE, self).__init__()
         
@@ -30,16 +30,16 @@ class RoPE(nn.Module):
                 forms a 2D rotation plane, yielding dim/2 independent rotations.
             max_seq_len: maximum sequence length supported. Frequencies are
                         precomputed for positions 0 to max_seq_len - 1.
-            theta: base frequency for the geometric progression of rotation
-                frequencies. Default 10000.0 (LLaMA 1/2). Higher values
-                (e.g. 500000 in LLaMA 3) extend long-context performance.
+            rope_theta: base frequency for the geometric progression of rotation
+                frequencies. Default 10000.0 (Mistral 1/2). Higher values
+                (e.g. 500000 in Mistral) extend long-context performance.
         Returns:
             None
         '''
         
         self.dim = dim
         self.max_seq_len = max_seq_len
-        self.theta = theta
+        self.rope_theta = rope_theta
         
         self.precompute_freqs_cis()
         
@@ -65,43 +65,49 @@ class RoPE(nn.Module):
             None (sets self.freqs_cis as a registered buffer)
         '''
         
-        inv_angle = 1.0 / self.theta ** (torch.arange(0, self.dim, 2) / self.dim)
+        inv_angle = 1.0 / self.rope_theta ** (torch.arange(0, self.dim, 2) / self.dim)
         seq = torch.arange(self.max_seq_len)
         freq = torch.einsum('i,j->ij', seq, inv_angle)
         freqs_cis = torch.polar(torch.ones_like(freq), freq)
         
         self.register_buffer("freqs_cis", freqs_cis, persistent=False)
     
-    def apply_rotary_pos_emb(self, x: torch.Tensor) -> torch.Tensor:
+    def apply_rotary_pos_emb(self, x: torch.Tensor, start_pos: int) -> torch.Tensor:
         
         '''
         Description:
             Apply rotary position embeddings to an input tensor (Q or K).
             Steps:
-                1. Reshape x into consecutive dimension pairs: (B, T, H, dim/2, 2)
-                2. View pairs as complex numbers: (B, T, H, dim/2)
+                1. Reshape x into consecutive dimension pairs: (B, H, T, dim/2, 2)
+                2. View pairs as complex numbers: (B, H, T, dim/2)
                 3. Multiply by precomputed freqs_cis — this IS the rotation
-                4. Convert back to real and reshape to (B, T, H, dim)
+                4. Convert back to real and reshape to (B, H, T, dim)
         Args:
-            x: input tensor of shape (B, T, H, dim) where
-            B = batch size, T = sequence length,
-            H = number of heads, dim = head dimension.
+            x: input tensor of shape (B, H, T, dim) where
+                B = batch size, H = number of heads,
+                T = sequence length, dim = head dimension.
+            start_pos: starting position index for the sequence. This allows for
+                applying RoPE to sequences that are continuations of previous ones.
         Returns:
-            Rotated tensor of shape (B, T, H, dim) with same dtype as input.
+            Rotated tensor of shape (B, H, T, dim) with same dtype as input.
         '''
         
-        B, T, H, dim = x.shape
+        B, H, T, dim = x.shape
         
         assert dim == self.dim, f"Input dimension {dim} does not match RoPE dimension {self.dim}"
         assert dim % 2 == 0, "RoPE dimension must be even"
-        assert T <= self.max_seq_len, f"Sequence length {T} exceeds maximum sequence length {self.max_seq_len}"
+        assert start_pos >= 0, "start_pos must be non-negative"
         
-        freqs_cis = self.freqs_cis[:T, :]
+        # Absolute positions: start_pos to start_pos + T - 1
+        end_pos = start_pos + T
+        assert end_pos <= self.max_seq_len, f"Sequence end position {end_pos} exceeds max_seq_len {self.max_seq_len}"
+        
+        freqs_cis = self.freqs_cis[start_pos: end_pos, :]
         
         # torch.view_as_complex requires the last dimension to be even, so we reshape accordingly
         # It also required the dtype to be float, so we convert to float before reshaping and convert back to the original dtype after the operation
-        x_reshaped = x.float().view(B, T, H, dim//2, 2)
+        x_reshaped = x.float().view(B, H, T, dim//2, 2)
         x_complex = torch.view_as_complex(x_reshaped)
-        x_rotated = torch.einsum('bthd, td -> bthd', x_complex, freqs_cis)
+        x_rotated = torch.einsum('bhtd, td -> bhtd', x_complex, freqs_cis)
         
-        return torch.view_as_real(x_rotated).view(B, T, H, dim).to(x.dtype)
+        return torch.view_as_real(x_rotated).view(B, H, T, dim).to(x.dtype)

@@ -184,67 +184,67 @@
 - ✅ Include benchmark results and performance charts in docs
 - ✅ Final GitHub-ready cleanup
 
-## Week 4: LLaMA — Model Architecture (Apr 7-13)
+## Week 4: Mistral — Model Architecture (Apr 7-13)
 
 ### Day 22 - RMSNorm + RoPE (Apr 7)
 
-- ✅ Implement `src/llm_engine/model/LLaMA/rmsnorm.py` (RMSNorm: no mean subtraction, no bias, float32 upcast)
-- ✅ Implement `src/llm_engine/model/LLaMA/rope.py` (Rotary Position Embeddings: precompute freqs, apply rotation to Q/K)
+- ✅ Implement `src/llm_engine/model/Mistral/rmsnorm.py` (RMSNorm: no mean subtraction, no bias, float32 upcast)
+- ✅ Implement `src/llm_engine/model/Mistral/rope.py` (Rotary Position Embeddings: precompute freqs, apply rotation to Q/K)
 
 ### Day 23 - SwiGLU + GQA Attention (Apr 8)
 
-- ⬜ Implement `src/llm_engine/model/LLaMA/feedforward.py` (SwiGLU: gate_proj, up_proj, down_proj, no bias)
-- ⬜ Implement `src/llm_engine/model/LLaMA/attention.py` (Grouped Query Attention: n_kv_heads < n_heads, RoPE on Q/K, repeat_kv)
+- ✅ Implement `src/llm_engine/model/Mistral/feedforward.py` (SwiGLU: gate_proj, up_proj, down_proj, no bias)
+- ⬜ Implement `src/llm_engine/model/Mistral/attention.py` (Grouped Query Attention: n_kv_heads < n_heads, RoPE on Q/K, repeat_kv)
 
-### Day 24 - LLaMA Block + Transformer (Apr 9)
+### Day 24 - Mistral Block + Transformer (Apr 9)
 
-- ⬜ Implement `src/llm_engine/model/LLaMA/block.py` (pre-norm with RMSNorm + GQA + SwiGLU)
-- ⬜ Implement `src/llm_engine/model/LLaMA/transformer.py` (embedding, N blocks, final RMSNorm, untied lm_head)
+- ⬜ Implement `src/llm_engine/model/Mistral/block.py` (pre-norm with RMSNorm + GQA + SwiGLU)
+- ⬜ Implement `src/llm_engine/model/Mistral/transformer.py` (embedding, N blocks, final RMSNorm, untied lm_head)
 
 ### Day 25 - Config + Weight Loader (Apr 10)
 
-- ⬜ Create `assets/models/llama/7B/config.json` (vocab_size, n_layers, n_heads, n_kv_heads, d_model, d_ff, rope_theta, etc.)
-- ⬜ Create `assets/models/llama/7B/manifest.json` (model_family, weights_file, tokenizer type)
-- ⬜ Update `src/llm_engine/utils/weight_loader.py` (map HuggingFace LLaMA checkpoint keys to our module names)
+- ⬜ Create `assets/models/mistral/7B/config.json` (vocab_size, n_layers, n_heads, n_kv_heads, d_model, d_ff, rope_theta, etc.)
+- ⬜ Create `assets/models/mistral/7B/manifest.json` (model_family, weights_file, tokenizer type)
+- ⬜ Update `src/llm_engine/utils/weight_loader.py` (map HuggingFace Mistral checkpoint keys to our module names)
 
 ### Day 26 - Tokenizer + Model Dispatch (Apr 11)
 
-- ⬜ Update `src/llm_engine/tokenizer/tokenizer.py` (support SentencePiece / LlamaTokenizer based on manifest tokenizer type)
-- ⬜ Update `src/llm_engine/model/__init__.py` (add LLaMA to `load_model()` dispatch)
+- ⬜ Update `src/llm_engine/tokenizer/tokenizer.py` (support SentencePiece / MistralTokenizer based on manifest tokenizer type)
+- ⬜ Update `src/llm_engine/model/__init__.py` (add Mistral to `load_model()` dispatch)
 - ⬜ Update `src/llm_engine/inference/inference_engine.py` (use `n_kv_heads` for KV cache dimensions when GQA)
 
 ### Day 27 - Smoke Test + Weight Debugging (Apr 12)
 
-- ⬜ Load LLaMA 7B weights, run forward pass
-- ⬜ Compare logits against HuggingFace `LlamaForCausalLM` reference
+- ⬜ Load Mistral 7B weights, run forward pass
+- ⬜ Compare logits against HuggingFace `MistralForCausalLM` reference
 - ⬜ Fix weight mapping mismatches
 
 ### Day 28 - Generation Validation (Apr 13)
 
 - ⬜ Validate end-to-end text generation (coherent output)
 - ⬜ Test with paged KV cache (GQA dimensions: n_kv_heads, not n_heads)
-- ⬜ Write LLaMA-specific unit tests
+- ⬜ Write Mistral-specific unit tests
 
-## Week 5: LLaMA — Benchmarks + Documentation (Apr 14-20)
+## Week 5: Mistral — Benchmarks + Documentation (Apr 14-20)
 
-### Day 29 - LLaMA Benchmarks (Apr 14)
+### Day 29 - Mistral Benchmarks (Apr 14)
 
 - ⬜ Latency benchmark (prompt lengths: 64, 256, 512)
 - ⬜ Throughput benchmark (single request, batched)
 - ⬜ Memory benchmark (standard vs paged KV cache with GQA)
 
-### Day 30 - LLaMA Load Test (Apr 15)
+### Day 30 - Mistral Load Test (Apr 15)
 
 - ⬜ Concurrent load test (1–64 users, paged cache)
-- ⬜ Compare LLaMA vs GPT-2 serving throughput
+- ⬜ Compare Mistral vs GPT-2 serving throughput
 - ⬜ Document load test results
 
 ### Day 31 - Documentation + Cleanup (Apr 16)
 
-- ⬜ Update `docs/concepts/architecture.md` (add LLaMA to component diagram)
-- ⬜ Write LLaMA concept docs (GQA, RoPE, SwiGLU)
-- ⬜ Update `README.md` (add LLaMA to features, benchmark results)
-- ⬜ Update `docs/progress.md` — mark LLaMA extension complete
+- ⬜ Update `docs/concepts/architecture.md` (add Mistral to component diagram)
+- ⬜ Write Mistral concept docs (GQA, RoPE, SwiGLU)
+- ⬜ Update `README.md` (add Mistral to features, benchmark results)
+- ⬜ Update `docs/progress.md` — mark Mistral extension complete
 
 ### Day 32-35 - Next Extension (Apr 17-20)
 
@@ -287,4 +287,49 @@
 - ⬜ Roofline analysis doc (compute vs memory-bandwidth bound at each optimization stage)
 - ⬜ GitHub Actions CI workflow (mark GPU tests `@pytest.mark.gpu`, run non-GPU tests in CI)
 - ⬜ Guided decoding / structured output (JSON schema-constrained sampling via logit masking)
-- ⬜ Add Mistral model support
+- ⬜ Falcon-7B model support (multi-query attention, LayerNorm, RoPE — validates engine works with TII's Falcon family)
+
+### Priority 1: Semantic KV Cache Eviction (~3-4 days)
+
+- ⬜ Implement `AttentionScoreTracker` — accumulate per-token attention weights across layers/heads during forward pass
+- ⬜ Modify attention module to expose attention scores
+- ⬜ Implement `EvictionPolicy` with strategies: LRU (baseline), attention-weighted, hybrid (pin sinks + evict lowest-scored)
+- ⬜ Wire `EvictionPolicy` into `MemoryAllocator`
+- ⬜ Integrate with `PagedKVCache` — evict blocks with lowest aggregate attention score under memory pressure
+- ⬜ Benchmark: compare perplexity degradation at 50% cache budget (LRU vs. attention-weighted)
+- **Why:** Novel — no production system (vLLM, LMCache) has this. Based on H2O/SnapKV/PyramidKV research.
+
+### Priority 2: SLO-Aware Scheduling + Preemption (~4-5 days)
+
+- ⬜ Extend `Request` with `priority`, `deadline_ms`, `slo_class` (realtime/interactive/batch)
+- ⬜ Implement `SLOScheduler` — Earliest Deadline First with priority classes (replace FCFS in `step()`)
+- ⬜ Implement preemption: pause running low-priority request, save KV blocks to CPU tensors, free GPU blocks
+- ⬜ Implement resume: reload preempted request's KV from CPU, resume decode when GPU blocks free up
+- ⬜ Benchmark: mixed workload (high-priority chat + low-priority batch), show bounded TTFT for high-priority requests
+- **Why:** Absent from vLLM and TGI. Shows production systems thinking (OS scheduling, priority inversion, SLA management).
+
+### Priority 3: Disaggregated Prefill/Decode (~5-7 days)
+
+- ⬜ Design split: separate `PrefillWorker` and `DecodeWorker` classes with KV handoff interface
+- ⬜ Implement `PrefillWorker` — process prompt, write KV to staging area (CPU tensor or shared block pool)
+- ⬜ Implement `DecodeWorker` — load staged KV into GPU blocks, run autoregressive generation
+- ⬜ Implement `DisaggregatedScheduler` — route requests to prefill queue first, then decode queue on completion
+- ⬜ Wire into Router, handle edge cases (prefill done but decode slots full)
+- ⬜ Benchmark: TTFT and decode throughput vs. current mixed scheduler, show latency isolation
+- **Why:** Architecture behind DistServe (OSDI '24) and Mooncake (Moonshot AI). Not native in vLLM.
+
+### Priority 4: Speculative Decoding (~4-5 days)
+
+- ⬜ Load GPT-2 small (124M) as draft model, GPT-2 medium (355M) as target model
+- ⬜ Implement `DraftModel` wrapper with K-token lookahead
+- ⬜ Implement verification forward pass — target model scores all K draft tokens in one batch
+- ⬜ Implement modified rejection sampling: accept matching tokens, resample at first divergence
+- ⬜ Integrate as `SpeculativeGenerator` with KV cache management for both models
+- ⬜ Benchmark: tokens/sec vs. standard decoding, acceptance rate at K=3,4,5
+
+### Priority 5: Chunked Prefill (~2-3 days)
+
+- ⬜ Modify scheduler to track `prefill_progress` per request, split prompt into configurable chunk size
+- ⬜ Interleave prefill chunks with decode batches in `step()`
+- ⬜ Handle KV cache state across chunks
+- ⬜ Benchmark: decode latency variance with and without chunking under long-prompt workload

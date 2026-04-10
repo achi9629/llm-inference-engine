@@ -78,7 +78,7 @@ Continuous batching outperforms static batching when:
 | Scenario                        | Why It Helps                                        |
 |---------------------------------|-----------------------------------------------------|
 | Variable-length outputs         | Short outputs finish early, slots get reused        |
-| Models that generate EOS        | Larger models (LLaMA 7B+) produce real EOS tokens   |
+| Models that generate EOS        | Larger models (Mistral 7B+) produce real EOS tokens   |
 | High request volume             | Queue refills slots instantly, GPU stays saturated  |
 | Mixed prompt lengths            | Short prompts finish first, long prompts keep going |
 

@@ -1,13 +1,14 @@
 {
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportMissingModuleSource": "none",
-        "reportMissingTypeStubs": "none",
-        "reportMissingImports": "none",
-    },
-    "coverage-gutters.coverageBaseDir": ".",
-    "coverage-gutters.coverageFileNames": ["coverage.xml"],
-    "search.exclude": {
-    "**/.ipynb_checkpoints": true
-}
-
+"python.analysis.diagnosticSeverityOverrides": {
+"reportMissingModuleSource": "none",
+"reportMissingTypeStubs": "none",
+"reportMissingImports": "none"
+},
+"coverage-gutters.coverageBaseDir": ".",
+"coverage-gutters.coverageFileNames": [
+"coverage.xml"
+],
+"search.exclude": {
+"**/.ipynb_checkpoints": true
+},
 }

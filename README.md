@@ -46,7 +46,7 @@ Each layer builds on the previous one. Benchmarks at each checkpoint quantify th
 
 ## Future Extensions
 
-- Add LLaMA 7B/8B support (RoPE, GQA, RMSNorm, SwiGLU)
+- Add Mistral 7B support (RoPE, GQA, RMSNorm, SwiGLU)
 - Speculative decoding (GPT-2 small drafts, GPT-2 medium verifies)
 - Prefix caching (reuse KV blocks across requests sharing system prompt)
 - Custom Triton FlashAttention kernel (fused QK^T → softmax → V, tiled, online softmax)

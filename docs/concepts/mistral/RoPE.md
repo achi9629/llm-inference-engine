@@ -98,8 +98,8 @@ Complex multiplication $(a + bi)(c + di) = (ac - bd) + (ad + bc)i$ is exactly th
 |--------------------------|--------------|----------------|----------------------|------------------|---------------------|
 | Sinusoidal (Transformer) | Fixed        | No             | Poor                 | Input embedding  | 0                   |
 | Learned absolute (GPT-2) | Learned      | No             | None (hard max)      | Input embedding  | `max_len × d_model` |
-| ALiBi (BLOOM)            | Fixed bias   | Yes            | Good                 | Attention scores | 0                   |
-| **RoPE (LLaMA)**         | **Rotation** | **Yes**        | **Moderate**         | **Q and K only** | **0**               |
+| ALiBi (BLOOM, Falcon)      | Fixed bias   | Yes            | Good                 | Attention scores | 0                   |
+| **RoPE (Mistral)**         | **Rotation** | **Yes**        | **Moderate**         | **Q and K only** | **0**               |
 
 **Key differences from GPT-2:**
 
@@ -112,7 +112,7 @@ Complex multiplication $(a + bi)(c + di) = (ac - bd) + (ad + bc)i$ is exactly th
 
 ## 6. Interview-Ready Points
 
-### Q: "Why does LLaMA use RoPE instead of learned position embeddings?"
+### Q: "Why does Mistral use RoPE instead of learned position embeddings?"
 
 > Three reasons: (1) RoPE encodes **relative** position by construction — the Q·K dot product depends on $(m - n)$, not on absolute positions individually. Learned embeddings encode absolute positions and must learn relative patterns from data. (2) RoPE has **zero learnable parameters** — positions are encoded via deterministic rotation frequencies. (3) RoPE is applied **directly to Q/K at every layer**, so position information doesn't decay through the network like additive embeddings do.
 
@@ -122,7 +122,7 @@ Complex multiplication $(a + bi)(c + di) = (ac - bd) + (ad + bc)i$ is exactly th
 
 ### Q: "What's the `10000` base in the frequency formula?"
 
-> It's $\theta_{\text{base}}$ — controls the wavelength range. $\theta_i = 1/10000^{2i/d}$ creates a geometric progression from high frequency (pair 0, wavelength ~$2\pi$) to low frequency (last pair, wavelength ~$2\pi \cdot 10000$). Higher base = longer wavelengths = better long-context extrapolation. LLaMA 3 uses `rope_theta=500000` instead of `10000` for this reason.
+> It's $\theta_{\text{base}}$ — controls the wavelength range. $\theta_i = 1/10000^{2i/d}$ creates a geometric progression from high frequency (pair 0, wavelength ~$2\pi$) to low frequency (last pair, wavelength ~$2\pi \cdot 10000$). Higher base = longer wavelengths = better long-context extrapolation. Mistral uses `rope_theta=500000` instead of `10000` for this reason.
 
 ### Q: "How does it work with KV cache during decode?"
 
@@ -132,7 +132,7 @@ Complex multiplication $(a + bi)(c + di) = (ac - bd) + (ad + bc)i$ is exactly th
 
 ## 7. Implementation Scope
 
-**File:** `src/llm_engine/model/LLaMA/rope.py`
+**File:** `src/llm_engine/model/Mistral/rope.py`
 
 **Two functions:**
 

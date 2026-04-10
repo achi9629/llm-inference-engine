@@ -5,7 +5,7 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_inferen
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_generator.py -v --log-cli-level=INFO
 
 test_attention
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_attention.py -v
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_attention.py -v --log-cli-level=INFO
 
 # test_kv_cache
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_kv_cache.py -v
@@ -41,5 +41,4 @@ PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_router.
 PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/test_api_server.py -v --log-cli-level=INFO
 
 # code_coverage
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/ --cov=src/llm_engine/ --cov-report=term-missing
-PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/ --cov=src/llm_engine/ --cov-report=xml
+PYTHONPATH=src python -W ignore::DeprecationWarning -m pytest tests/ --cov=src/llm_engine/ --cov-report=term-missing --cov-report=xml --cov-fail-under=85

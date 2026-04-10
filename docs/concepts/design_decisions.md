@@ -109,3 +109,34 @@ for i in range(B):
 4. Model forward pass → support ragged `T_new` per sequence (FlashAttention with `cu_seqlens`) or split prefill/decode into separate micro-batches
 
 **Takeaway:** Left-padded static batching is the correct design for our current stack (standard PyTorch attention, `generate()` loop). Variable-length continuous batching is the production-optimal path but requires kernel-level changes (FlashAttention/PagedAttention) that go beyond the current PyTorch-level implementation.
+
+## 4. Mistral KV Cache and RoPE Strategy
+
+**Problem:** Mistral uses Grouped-Query Attention (GQA) and RoPE, and the attention layer must work correctly with both standard KV cache and paged KV cache. We also want the cache layer to remain reusable across serving modes and future model integrations.
+
+**Our Choice:** Store KV cache entries in unrotated form and apply RoPE inside the attention layer.
+
+For the current implementation:
+
+- `KVCache.update_cache()` returns the full contiguous cache history for the sequence
+- cached K and V are stored unrotated
+- query (`q`) is rotated using the start position of the current chunk
+- key (`k`) is rotated using `start_pos = 0` because the returned cache span corresponds to absolute positions `0..T_total-1`
+- `repeat_kv()` is applied after reading from cache, so cache storage remains compact in `n_kv_heads` form
+
+**Why:** This keeps the cache layer simple and model-agnostic:
+
+- cache is responsible only for storing and returning KV tensors
+- attention is responsible for positional encoding
+- unrotated cache avoids baking position information into stored blocks
+- this preserves future flexibility for prefix reuse and paged/block-level reuse
+
+**Tradeoff:** This design is correct for the current cache contract, but it increases compute cost because RoPE is applied to the full returned key history on each step. As context grows, this becomes more expensive.
+
+**Current Assumption:** The `k` rotation rule `start_pos = 0` is correct only because the cache currently returns the full contiguous sequence history from token position `0`.
+
+**Future Trigger:** If cache behavior changes to return only a suffix, a sliding window, evicted history, or gathered paged blocks, then `k` can no longer assume `start_pos = 0`. In that case, the attention layer must consume explicit key positions from the cache layer.
+
+**Next Step:** Add Sliding Window Attention (SWA) for Mistral variants that support it. Once SWA is introduced, attention and RoPE should operate only on the active visible KV span rather than the entire cache history.
+
+**Takeaway:** The current design favors correctness, cache simplicity, and future reuse over maximum long-context decode efficiency. It is the right baseline design for the current engine.
