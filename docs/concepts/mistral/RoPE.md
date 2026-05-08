@@ -98,8 +98,8 @@ Complex multiplication $(a + bi)(c + di) = (ac - bd) + (ad + bc)i$ is exactly th
 |--------------------------|--------------|----------------|----------------------|------------------|---------------------|
 | Sinusoidal (Transformer) | Fixed        | No             | Poor                 | Input embedding  | 0                   |
 | Learned absolute (GPT-2) | Learned      | No             | None (hard max)      | Input embedding  | `max_len × d_model` |
-| ALiBi (BLOOM, Falcon)      | Fixed bias   | Yes            | Good                 | Attention scores | 0                   |
-| **RoPE (Mistral)**         | **Rotation** | **Yes**        | **Moderate**         | **Q and K only** | **0**               |
+| ALiBi (BLOOM, Falcon)    | Fixed bias   | Yes            | Good                 | Attention scores | 0                   |
+| **RoPE (Mistral)**       | **Rotation** | **Yes**        | **Moderate**         | **Q and K only** | **0**               |
 
 **Key differences from GPT-2:**
 

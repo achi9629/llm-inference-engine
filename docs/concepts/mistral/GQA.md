@@ -153,24 +153,24 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 ## 6. MHA vs MQA vs GQA Comparison
 
-| Property           | MHA          | MQA             | GQA                           |
-|--------------------|--------------|-----------------|-------------------------------|
-| Q heads            | $H$          | $H$             | $H$                           |
-| KV heads           | $H$          | 1               | $G$ (where $1 < G < H$)       |
-| KV cache size      | $2BLHTd_h$   | $2BLTd_h$       | $2BLGTd_h$                    |
-| KV cache reduction | 1x           | $H$x            | $H/G$x                        |
-| Quality            | Best         | Degraded        | Near-MHA                      |
-| Throughput         | Lowest       | Highest         | Near-MQA                      |
+| Property           | MHA          | MQA                        | GQA                           |
+|--------------------|--------------|----------------------------|-------------------------------|
+| Q heads            | $H$          | $H$                        | $H$                           |
+| KV heads           | $H$          | 1                          | $G$ (where $1 < G < H$)       |
+| KV cache size      | $2BLHTd_h$   | $2BLTd_h$                  | $2BLGTd_h$                    |
+| KV cache reduction | 1x           | $H$x                       | $H/G$x                        |
+| Quality            | Best         | Degraded                   | Near-MHA                      |
+| Throughput         | Lowest       | Highest                    | Near-MQA                      |
 | Used in            | GPT-2, GPT-3 | PaLM (original), Falcon-7B | **LLaMA 2/3, Mistral, Gemma** |
 
 **Mistral / LLaMA / Falcon model configurations:**
 
-| Model      | n_heads | n_kv_heads | Group size | KV reduction |
-|------------|---------|------------|------------|--------------|
-| LLaMA 7B   | 32      | 32         | 1 (MHA)    | 1x           |
-| LLaMA 13B  | 40      | 40         | 1 (MHA)    | 1x           |
-| LLaMA 70B  | 64      | 8          | 8          | 8x           |
-| LLaMA 3 8B | 32      | 8          | 4          | 4x           |
+| Model       | n_heads | n_kv_heads | Group size | KV reduction |
+|-------------|---------|------------|------------|--------------|
+| LLaMA 7B    | 32      | 32         | 1 (MHA)    | 1x           |
+| LLaMA 13B   | 40      | 40         | 1 (MHA)    | 1x           |
+| LLaMA 70B   | 64      | 8          | 8          | 8x           |
+| LLaMA 3 8B  | 32      | 8          | 4          | 4x           |
 | Mistral 7B  | 32      | 8          | 4          | 4x           |
 | Falcon-7B   | 71      | 1          | 71 (MQA)   | 71x          |
 | Falcon-40B  | 128     | 8          | 16         | 16x          |

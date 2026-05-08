@@ -104,7 +104,7 @@ This keeps parameter parity: $3 \times 4096 \times 14336 \approx 1.31 \times 8 \
 
 | Method       | Activation       | Gating  | Projections            | Used In                          |
 |--------------|------------------|---------|------------------------|----------------------------------|
-| Standard FFN | GELU / ReLU      | No      | 2 (up, down)           | GPT-2, BERT, Falcon           |
+| Standard FFN | GELU / ReLU      | No      | 2 (up, down)           | GPT-2, BERT, Falcon              |
 | GLU          | Sigmoid          | Yes     | 3 (gate, up, down)     | Original GLU paper               |
 | GeGLU        | GELU             | Yes     | 3 (gate, up, down)     | Some T5 variants                 |
 | ReGLU        | ReLU             | Yes     | 3 (gate, up, down)     | Explored in Noam Shazeer's paper |

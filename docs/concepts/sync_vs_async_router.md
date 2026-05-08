@@ -4,7 +4,7 @@
 
 The Day 17 Router processes one request at a time:
 
-```
+```bash
 Request A arrives  →  handle → add → step → generate → complete → return
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                       Request B BLOCKED until A finishes
@@ -21,7 +21,7 @@ Split the Router into two parts:
 
 ### Before (Sync)
 
-```
+```bash
 generate() {
     handle → add_request → step → engine.generate(single) → complete → return
 }
@@ -29,7 +29,7 @@ generate() {
 
 ### After (Async)
 
-```
+```bash
 generate():                           _generation_loop() (background):
     handle → add_request              while True:
     future = create Future                if scheduler.has_work():
@@ -57,11 +57,11 @@ The scheduler finally does what it was designed for — **batch multiple request
 
 ## New Data Structures
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `_pending_futures` | `dict[str, asyncio.Future]` | Maps request_id → Future (the waiter) |
-| `_loop_task` | `asyncio.Task` | Reference to the background generation loop |
-| `_lock` | `asyncio.Lock` | Protects scheduler access from concurrent coroutines |
+| Field              | Type                        | Purpose                                              |
+|--------------------|-----------------------------|------------------------------------------------------|
+| `_pending_futures` | `dict[str, asyncio.Future]` | Maps request_id → Future (the waiter)                |
+| `_loop_task`       | `asyncio.Task`              | Reference to the background generation loop          |
+| `_lock`            | `asyncio.Lock`              | Protects scheduler access from concurrent coroutines |
 
 ## Key Design Decisions
 
@@ -79,18 +79,18 @@ GPU inference is inherently blocking — the CPU waits for CUDA kernels. The bac
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `router.py` | `asyncio` imports, `_pending_futures`, `_lock`, `start()`, async `generate()`, `_generation_loop()` |
-| `api_server.py` | Endpoint becomes `async def`, `await router.generate()`, startup hook for `router.start()` |
-| `run_server.py` | No change (uvicorn already runs an event loop) |
+| File            | Change                                                                                              |
+|-----------------|-----------------------------------------------------------------------------------------------------|
+| `router.py`     | `asyncio` imports, `_pending_futures`, `_lock`, `start()`, async `generate()`, `_generation_loop()` |
+| `api_server.py` | Endpoint becomes `async def`, `await router.generate()`, startup hook for `router.start()`          |
+| `run_server.py` | No change (uvicorn already runs an event loop)                                                      |
 
 ## Comparison
 
-| Aspect | Sync (Day 17) | Async (Day 18) |
-|--------|---------------|----------------|
-| Requests processed | One at a time | Multiple concurrently |
-| Scheduler utilization | Always batch_size=1 | Up to max_batch_size |
-| GPU utilization | Idle between requests | Better — batched inference |
-| Complexity | Simple | Moderate (futures, locks, background task) |
-| Use case | Testing, single user | Production, multi-user |
+| Aspect                | Sync (Day 17)         | Async (Day 18)                             |
+|-----------------------|-----------------------|--------------------------------------------|
+| Requests processed    | One at a time         | Multiple concurrently                      |
+| Scheduler utilization | Always batch_size=1   | Up to max_batch_size                       |
+| GPU utilization       | Idle between requests | Better — batched inference                 |
+| Complexity            | Simple                | Moderate (futures, locks, background task) |
+| Use case              | Testing, single user  | Production, multi-user                     |
