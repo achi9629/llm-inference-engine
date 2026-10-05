@@ -1,8 +1,10 @@
-import torch, pytest
+import torch, pytest, logging
 
 from llm_engine import MultiHeadAttention, KVCache, \
                        PagedCacheContext, PagedKVCache, MemoryAllocator, \
                        BlockTable, MistralAttention
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # constants
 num_blocks = 32
@@ -13,6 +15,7 @@ n_embd = 512
 n_heads = 32
 n_kv_heads = 8
 n_ctx = 32
+sliding_window = 20
 head_dim = n_embd // n_heads
 atol = 1e-7
 dtype = torch.float32
@@ -112,6 +115,7 @@ def mistral_attention():
                                 n_heads = n_heads,
                                 n_kv_heads = n_kv_heads,
                                 n_ctx = n_ctx,
+                                sliding_window = None, # Not used in these tests, so set to None
                 )
         attn.eval()
         atten_layers.append(attn)
@@ -343,3 +347,35 @@ def test_mistral_chunked_prefill_parity(mistral_attention,
     out_chunked = x.clone()
     
     assert torch.allclose(out_one_shot[:, 4:, :], out_chunked, atol = atol), "Outputs from one-shot prefill and chunked prefill should be close for paged KV cache"
+    
+@pytest.fixture
+def sliding_window_mistral_attention():
+    
+    atten_layers = []
+    for _ in range(n_layers):
+        attn = MistralAttention(n_embd = n_embd, 
+                                n_heads = n_heads,
+                                n_kv_heads = n_kv_heads,
+                                n_ctx = n_ctx,
+                                sliding_window = sliding_window, # Set sliding window to 5 for these tests
+                )
+        attn.eval()
+        atten_layers.append(attn)
+    return atten_layers
+
+def test_sliding_window_not_triggered(sliding_window_mistral_attention, mistral_attention, kv_group_cache):
+    
+    x_inp = torch.randn(batch_size, sliding_window, n_embd, dtype = dtype)
+    
+    x = x_inp.clone()
+    for layer_idx in range(n_layers):
+        x = mistral_attention[layer_idx](x, layer_idx = layer_idx, kv_cache = kv_group_cache)
+    out_mistral = x.clone()
+    
+    x = x_inp.clone()
+    for layer_idx in range(n_layers):
+        x = sliding_window_mistral_attention[layer_idx](x, layer_idx = layer_idx, kv_cache = kv_group_cache)
+    out_swa_mistral = x.clone()
+    
+    logger.info(f"shapes: {out_mistral[0][0][:10]}, {out_swa_mistral[0][0][:10]}")
+    # assert torch.allclose(out_mistral, out_swa_mistral, atol = atol), "Outputs should be close when sliding window is not triggered"

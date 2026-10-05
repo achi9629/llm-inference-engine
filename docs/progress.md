@@ -194,7 +194,7 @@
 ### Day 23 - SwiGLU + GQA Attention (Apr 8)
 
 - ✅ Implement `src/llm_engine/model/Mistral/feedforward.py` (SwiGLU: gate_proj, up_proj, down_proj, no bias)
-- ⬜ Implement `src/llm_engine/model/Mistral/attention.py` (Grouped Query Attention: n_kv_heads < n_heads, RoPE on Q/K, repeat_kv)
+- ✅ Implement `src/llm_engine/model/Mistral/attention.py` (Grouped Query Attention: n_kv_heads < n_heads, RoPE on Q/K, repeat_kv)
 
 ### Day 24 - Mistral Block + Transformer (Apr 9)
 
@@ -333,3 +333,14 @@
 - ⬜ Interleave prefill chunks with decode batches in `step()`
 - ⬜ Handle KV cache state across chunks
 - ⬜ Benchmark: decode latency variance with and without chunking under long-prompt workload
+
+### Priority 6: TurboQuant KV Cache Compression (~1-2 weeks)
+
+- ⬜ Implement PolarQuant (Cartesian → polar coordinate transform on KV vectors, zero-overhead quantization constants)
+- ⬜ Implement QJL residual correction (1-bit sign-bit Johnson-Lindenstrauss on quantization error)
+- ⬜ Write Triton kernel for quantized attention (3-4 bit keys × fp16 queries, fused dequant in kernel)
+- ⬜ Integrate with paged KV cache (quantize before block storage, dequant during attention)
+- ⬜ Benchmark: memory reduction (fp16 vs 4-bit vs 3-bit KV cache under concurrent requests)
+- ⬜ Benchmark: attention latency (quantized kernel vs fp16 baseline)
+- ⬜ Benchmark: generation quality (perplexity, LongBench tasks — verify zero accuracy loss at 3-4 bits)
+- **Prereqs:** P5 (Triton Kernels) must be complete before starting.

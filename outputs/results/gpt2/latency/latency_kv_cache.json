@@ -1,0 +1,56 @@
+[
+  {
+    "latency_sec": 0.2945346273481846,
+    "tokens_per_sec": 169.75932660336204,
+    "peak_memory_mb": 642.837890625,
+    "gpu_snapshot": {
+      "memory_allocated_mb": 606.837890625,
+      "memory_reserved_mb": 694.0,
+      "memory_total_mb": 81053.375,
+      "memory_free_mb": 80359.375,
+      "gpu_memory_total_mb": 81920.0,
+      "gpu_memory_used_mb": 15517.5625,
+      "gpu_memory_free_mb": 66402.4375,
+      "gpu_utilization_percent": 29,
+      "memory_utilization_percent": 6
+    },
+    "MFU_percent": 0.21666480008955552,
+    "prompt_length": 64
+  },
+  {
+    "latency_sec": 0.29414620995521545,
+    "tokens_per_sec": 169.98349224901668,
+    "peak_memory_mb": 659.37646484375,
+    "gpu_snapshot": {
+      "memory_allocated_mb": 606.837890625,
+      "memory_reserved_mb": 750.0,
+      "memory_total_mb": 81053.375,
+      "memory_free_mb": 80303.375,
+      "gpu_memory_total_mb": 81920.0,
+      "gpu_memory_used_mb": 15573.5625,
+      "gpu_memory_free_mb": 66346.4375,
+      "gpu_utilization_percent": 29,
+      "memory_utilization_percent": 6
+    },
+    "MFU_percent": 0.21695090398602176,
+    "prompt_length": 256
+  },
+  {
+    "latency_sec": 0.3024565987288952,
+    "tokens_per_sec": 165.3129745230559,
+    "peak_memory_mb": 716.59814453125,
+    "gpu_snapshot": {
+      "memory_allocated_mb": 606.837890625,
+      "memory_reserved_mb": 854.0,
+      "memory_total_mb": 81053.375,
+      "memory_free_mb": 80199.375,
+      "gpu_memory_total_mb": 81920.0,
+      "gpu_memory_used_mb": 15677.5625,
+      "gpu_memory_free_mb": 66242.4375,
+      "gpu_utilization_percent": 33,
+      "memory_utilization_percent": 6
+    },
+    "MFU_percent": 0.21098989548264582,
+    "prompt_length": 512
+  }
+]

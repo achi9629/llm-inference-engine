@@ -5,6 +5,7 @@
 "reportMissingImports": "none"
 },
 "coverage-gutters.coverageBaseDir": ".",
+"errorLens.codeLensEnabled": false,
 "coverage-gutters.coverageFileNames": [
 "coverage.xml"
 ],

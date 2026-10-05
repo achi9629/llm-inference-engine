@@ -1,0 +1,23 @@
+[
+  {
+    "prompt_length": 64,
+    "latency_sec": 0.5932407863438129,
+    "tokens_per_sec": 84.28280919144774,
+    "num_generated_tokens": 50,
+    "peak_memory_mb": 68803.63427734375
+  },
+  {
+    "prompt_length": 256,
+    "latency_sec": 0.6157868914306164,
+    "tokens_per_sec": 81.19692168801832,
+    "num_generated_tokens": 50,
+    "peak_memory_mb": 68825.689453125
+  },
+  {
+    "prompt_length": 512,
+    "latency_sec": 0.6360581777989864,
+    "tokens_per_sec": 78.60916146541788,
+    "num_generated_tokens": 50,
+    "peak_memory_mb": 68857.19140625
+  }
+]
